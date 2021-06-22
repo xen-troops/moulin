@@ -300,19 +300,18 @@ Mandatory options:
   {build_target}`. Every component should generate at least one image
   file.
 
-* :code:`conf` - list of additional :code:`local.conf` options. It can
-  be empty, but it should be present anyways. In most cases you would
-  want to define target MACHINE at least. Please note that each entry
-  in :code:`conf` list is not a :code:`key:value` pair, but another
-  list of two items. We use this format because it is possible to have
-  multiple :code:`local.conf` entries with the same key.
+Optional parameters. Those provide advanced features that may be
+needed if you are building multiple VMs with cross-dependencies.
+
+* :code:`conf` - list of additional :code:`local.conf` options. Please
+  note that each entry in :code:`conf` list is not a :code:`key:value`
+  pair, but another list of two items. We use this format because it
+  is possible to have multiple :code:`local.conf` entries with the
+  same key.
 
 * :code:`layers` - list of additional layers. Those layers will be
   added to the build using :code:`bitbake-layers add-layer {layers}`
   command.
-
-Optional parameters. Those provide advanced features that may be
-needed if you are building multiple VMs with cross-dependencies.
 
 * :code:`work_dir` - `bitbake`'s work directory. Default value is
   "build". This is where files like "conf/local.conf" are stored. You
