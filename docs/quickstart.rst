@@ -37,7 +37,7 @@ There is example of minimal AOSP build:
 		      type: android
 		      env:
 		        - "TARGET_BOARD_PLATFORM=r8a7795"
-		      lunch-target: xenvm-userdebug
+		      lunch_target: xenvm-userdebug
 		      target_images:
 		        - "out/xenvm/userdebug/boot.img"
 		        - "out/xenvm/userdebug/system.img"
@@ -58,7 +58,7 @@ the building. In this particular case we have only one `repo
 
 :code:`builder` section configures the actual build. In this example
 we are building Android, so it has Android-specific options like
-:code:`lunch-target`.
+:code:`lunch_target`.
 
 If the code above is stored in file `android-vm.yaml`, you can issue
 :code:`moulin android-vm.yaml`. This will create `build.ninja` file in

@@ -348,7 +348,7 @@ cases AOSP is cloned using `repo` fetcher.
     type: android # Should be 'android'
     env:          # Optional
       - "TARGET_BOARD_PLATFORM=r8a7795"
-    lunch-target: xenvm-userdebug
+    lunch_target: xenvm-userdebug
     target_images:
       - "out/xenvm/userdebug/boot.img"
       - "out/xenvm/userdebug/system.img"
@@ -358,7 +358,7 @@ Mandatory options:
 * :code:`type` - Builder type. Should be :code:`android` for this type
   of builder.
 
-* :code:`lunch-target` - `lunch`'s build target. This will be used
+* :code:`lunch_target` - `lunch`'s build target. This will be used
   to run the build: :code:`$ lunch {lunch-target}`
 
 * :code:`target_images` - list of image files that should be generated

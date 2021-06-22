@@ -50,7 +50,7 @@ class AndroidBuilder:
         variables = {
             "build_dir": self.build_dir,
             "env": env,
-            "lunch_target": self.conf["lunch-target"]
+            "lunch_target": self.conf["lunch_target"]
         }
         targets = [
             os.path.join(self.build_dir, t) for t in self.conf["target_images"]
