@@ -128,7 +128,7 @@ class YoctoBuilder:
                              variables=common_variables)
 
         # Then we need to add layers
-        layers = " ".join(self.conf["layers"])
+        layers = " ".join(self.conf.get("layers", []))
         layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir,
                                          "yocto", "layers")
         self.generator.build(layers_stamp,
@@ -139,7 +139,10 @@ class YoctoBuilder:
         # Next - update local.conf
         local_conf_stamp = create_stamp_name(self.yocto_dir, self.work_dir,
                                              "yocto", "lolcal_conf")
-        local_conf = _flatten_yocto_conf(self.conf["conf"])
+        if "conf" in self.conf:
+            local_conf = _flatten_yocto_conf(self.conf["conf"])
+        else:
+            local_conf = []
 
         # Handle external sources (like build artifacts from some other build)
         local_conf.extend(self._get_external_src())
