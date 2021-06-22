@@ -346,7 +346,7 @@ cases AOSP is cloned using `repo` fetcher.
 
   builder:
     type: android # Should be 'android'
-    env:
+    env:          # Optional
       - "TARGET_BOARD_PLATFORM=r8a7795"
     lunch-target: xenvm-userdebug
     target_images:
@@ -365,5 +365,7 @@ Mandatory options:
   by this component as a result of invoking :code:`$ m`. Every
   component should generate at least one image file.
 
+Optional parameters:
+
 * :code:`env` - list of additional environment variables that should
-  be exported before calling :code:`lunch`. Can be empty.
+  be exported before calling :code:`lunch`.
