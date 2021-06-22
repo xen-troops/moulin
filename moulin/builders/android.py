@@ -46,7 +46,7 @@ class AndroidBuilder:
     def gen_build(self):
         """Generate ninja rules to build AOSP"""
 
-        env = " ".join(self.conf["env"])
+        env = " ".join(self.conf.get("env", []))
         variables = {
             "build_dir": self.build_dir,
             "env": env,
