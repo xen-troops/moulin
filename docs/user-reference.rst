@@ -15,7 +15,7 @@ invoke `moulin` after you made changes into your YAML file. `Ninja`
 will detect any changes to this file and invoke `moulin` automatically
 to re-create :code:`ninja.build`.
 
-If YAML file contains :code:`paramaters` key, it is possible to invoke
+If YAML file contains :code:`parameters` key, it is possible to invoke
 `moulin` with additional command line options. Set of this options
 depends of contents of YAML file and can be viewed using
 :code:`--help-config` command line option.
@@ -23,7 +23,7 @@ depends of contents of YAML file and can be viewed using
 YAML sections
 -------------
 
-YAML file should consist of number pre-defined keys/sections which are discussed below. Any
+YAML file should consist of number of pre-defined keys/sections which are discussed below. Any
 unknown keys are ignored. Right now only the following top-level keys are supported:
 
 * :code:`desc` - mandatory
@@ -86,7 +86,7 @@ Apart from two mandatory options, component description can contain following op
 * :code:`build_dir` - build directory name. By default component's name is used.
 * :code:`default` - if set to :code:`true` - tells Ninja that this
   component is a default build target. This can be omitted and Ninja
-  will chose build target by own rules.
+  will choose build target by own rules.
 
 Variables
 ^^^^^^^^^
@@ -160,10 +160,12 @@ during pre-processing stage. Rules of this process are:
 
 * Dictionaries are extended with new keys from :code:`overrides` section.
 * If dictionary already have the key:
+
   * If type of original value differs from type of :code:`overrides` section value, error is generated.
   * If key's value is a scalar (number, boolean, string) that it is replaced with value from :code:`overrides` section.
   * If key's value is an another dictionary, process start recursively.
   * If key's value is a list, it is expanded with values from :code:`overrides` section.
+
 * Order of parameters application is not specified.
 
 Basically, this rules follow the intuitive idea of
@@ -234,7 +236,7 @@ list of supported options:
 * :code:`manifest` - optional - manifest file name. Corresponds to `repo`'s
   :code:`-m` option.
 * :code:`depth` - optional - cloning depth of internal repositories. Corresponds to `repo`'s
-  :code:`--depth` option. Setting it to 1 will sufficiently increase fetching speed.
+  :code:`--depth` option. Setting it to 1 will sufficiently decrease fetching time.
 * :code:`groups` - optional - name of manifest groups that should be synced. Corresponds to `repo`'s
   :code:`-g` option. You can use it to chose which project groups needs to be synced.
 * :code:`dir` - optional - directory name which should be used for
@@ -245,7 +247,7 @@ list of supported options:
 Builders
 --------
 
-Fetchers are the `moulin` plugins responsible for actual image building. Right
+Builders are the `moulin` plugins responsible for actual image building. Right
 now only `yocto` and `android` are supported.
 
 `moulin` will generate phony Ninja target
@@ -326,7 +328,7 @@ needed if you are building multiple VMs with cross-dependencies.
   ensure that Dom0 will be built **after** DomU.
 
 * :code:`external_src` - list of external sources for packages. This
-  options will make `muolin` to generate
+  options will make `moulin` to generate
   :code:`EXTERNALSRC_pn-{package}` and
   :code:`EXTERNALSRC_BUILD_pn-{package}` in `local.conf`. This feature
   is used to provide Yocto build with artifacts that were built
