@@ -13,7 +13,7 @@ familiar with it, you can take a look at the `official specification
 multiple guides that are available in the Internet.
 
 For the most of this documentation we assume that you can read and
-understand YAML files.z
+understand YAML files.
 
 Simple Android build
 --------------------
@@ -124,7 +124,7 @@ Now let's consider more complex example:
 This build file allows you to build Xilinx BSP for one of selected
 devices(zc702-zynq7, zc706-zynq7, qemu-zynq7). Apart from early
 discussed :code:`desc` and :code:`components` sections we can see two
-new: :code:`variables` and :code:`paramaters`. But let's take a look
+new: :code:`variables` and :code:`parameters`. But let's take a look
 at the component. In this case we are fetching two `git`
 repositories. Also we are building Yocto distribution now, we have
 completely different builder with different option. You can see
@@ -263,7 +263,7 @@ The next example is the most complex one. It shows the main reason why
 		        - [SERIAL_CONSOLES, ""]
 
 		        # Disable shared link for GO packages
-		        - [XT_GUESTS_INSTALL, "dom0 domd"]
+		        - [XT_GUESTS_INSTALL, "domu"]
 
 		        - [MACHINEOVERRIDES_append, ":%{MACHINE}"]
 		        - [TUNE_FEATURES_append, " cortexa57-cortexa53"]
@@ -327,7 +327,7 @@ The next example is the most complex one. It shows the main reason why
 		        # to be hypervisor's one
 		        - [SERIAL_CONSOLES, "115200;hvc0"]
 
-		        - [XT_GUESTS_INSTALL, "dom0 domd"]
+		        - [XT_GUESTS_INSTALL, "domu"]
 
 		      build_target: core-image-weston
 		      layers:
