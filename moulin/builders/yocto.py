@@ -152,7 +152,7 @@ class YoctoBuilder:
 
         # '$' is a ninja escape character so we need to quote it
         local_conf_lines = [
-            shlex.quote(f'{k} = "{v.replace("$", "$$")}"')
+            shlex.quote(f'{k.replace("$", "$$")} = "{v.replace("$", "$$")}"')
             for k, v in local_conf
         ]
 
