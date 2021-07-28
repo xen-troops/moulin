@@ -282,6 +282,7 @@ additional layers and :code:`bitbake` used to perform the build.
       - "../meta-other-layer/"
     external_src:     # Optional
       "package-name": "path-to-package-sources"
+      "another-package-name": ["path part1", "path part2", "path part3"]
     target_images:    # Mandatory
       - "tmp/deploy/images/machine-name/Image"
     additional_deps:  # Optional
@@ -327,12 +328,11 @@ needed if you are building multiple VMs with cross-dependencies.
   ensure that Dom0 will be built **after** DomU.
 
 * :code:`external_src` - list of external sources for packages. This
-  options will make `moulin` to generate
-  :code:`EXTERNALSRC_pn-{package}` and
-  :code:`EXTERNALSRC_BUILD_pn-{package}` in `local.conf`. This feature
-  is used to provide Yocto build with artifacts that were built
-  outside of the tree. Such artifacts can be provided by another
-  component, for example.
+  option will make `moulin` to generate
+  :code:`EXTERNALSRC_pn-{package}` in `local.conf`. This feature is
+  used to provide Yocto build with artifacts that were built outside
+  of the tree. Such artifacts can be provided by another component,
+  for example.
 
 android builder
 ^^^^^^^^^^^^^^^

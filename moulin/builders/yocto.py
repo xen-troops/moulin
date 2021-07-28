@@ -107,9 +107,12 @@ class YoctoBuilder:
 
         ret = []
         for (key, val) in self.conf["external_src"].items():
-            path = os.path.abspath(os.path.join(self.yocto_dir, val))
+            if isinstance(val, list):
+                path = os.path.join(val)
+            else:
+                path = val
+            path = os.path.abspath(path)
             ret.append((f"EXTERNALSRC_pn-{key}", path))
-            ret.append((f"EXTERNALSRC_BUILD_pn-{key}", path))
 
         return ret
 
