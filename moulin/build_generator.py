@@ -10,6 +10,7 @@ import sys
 
 from importlib import import_module
 from moulin import ninja_syntax
+from moulin import utils
 
 BUILD_FILENAME = 'build.ninja'
 
@@ -23,6 +24,8 @@ def generate_build(conf,
     generator = ninja_syntax.Writer(open(ninja_build_fname, 'w'))
 
     _gen_regenerate(conf_file_name, generator)
+
+    _flatten_sources(conf)
     # We want to have all Ninja build rules before all actual build
     # commands. So we need to scan conf twice. On the first scan we will
     # determine and load all required plugins. On the same time, we'll ask them
@@ -64,6 +67,11 @@ def _gen_regenerate(conf_file_name, generator):
     generator.build(BUILD_FILENAME, "regenerate",
                     [this_script, conf_file_name])
     generator.newline()
+
+
+def _flatten_sources(conf):
+    for component in conf["components"].values():
+        component["sources"] = utils.flatten_list(component["sources"])
 
 
 def _get_modules(conf, generator):
