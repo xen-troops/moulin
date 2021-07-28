@@ -9,11 +9,11 @@ import shlex
 from moulin.utils import create_stamp_name
 
 
-def get_builder(conf, name, src_stamps, generator):
+def get_builder(conf, name, build_dir, src_stamps, generator):
     """
     Return configured YoctoBuilder class
     """
-    return YoctoBuilder(conf, name, src_stamps, generator)
+    return YoctoBuilder(conf, name, build_dir, src_stamps, generator)
 
 
 def gen_build_rules(generator):
@@ -87,7 +87,7 @@ class YoctoBuilder:
     """
     YoctoBuilder class generates Ninja rules for given build configuration
     """
-    def __init__(self, conf, name, src_stamps, generator):
+    def __init__(self, conf, name, build_dir, src_stamps, generator):
         self.conf = conf
         self.name = name
         self.generator = generator
@@ -98,7 +98,7 @@ class YoctoBuilder:
         #   have "poky" in our yocto_dir
         # - work_dir is the build directory where we can find conf/local.conf, tmp and other
         #   directories. It is called "build" by default
-        self.yocto_dir = self.conf["build-dir"]
+        self.yocto_dir = build_dir
         self.work_dir = self.conf.get("work_dir", "build")
 
     def _get_external_src(self):
