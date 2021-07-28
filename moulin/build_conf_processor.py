@@ -111,8 +111,8 @@ def _apply_overrides(tree, overrides):
             continue
         if not isinstance(val, type(tree[key])):
             raise Exception(
-                f"Different items types in main YAML tree and overrides: {type(val)} != {type(tree[key])}"
-            )
+                ("Different items types in main YAML tree and overrides:"
+                 f"{type(val)} != {type(tree[key])} at key {key} val {val}"))
         if isinstance(val, list):
             tree[key].extend(val)
         elif isinstance(val, dict):
