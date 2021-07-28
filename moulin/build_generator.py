@@ -31,11 +31,8 @@ def generate_build(conf,
 
     # Now we have all plugins loaded and we can generate some build rules
     for comp_name, component in conf["components"].items():
-        # build-dir parameter is optional
+        build_dir = component.get("build-dir", comp_name)
         builder_conf = component["builder"]
-        build_dir = builder_conf.get("build-dir", comp_name)
-        if "build-dir" not in builder_conf:
-            builder_conf["build-dir"] = build_dir
 
         source_stamps = []
         for source in component["sources"]:
@@ -49,7 +46,8 @@ def generate_build(conf,
 
         builder_module = builder_modules[builder_conf["type"]]
         builder = builder_module.get_builder(builder_conf, comp_name,
-                                             source_stamps, generator)
+                                             build_dir, source_stamps,
+                                             generator)
 
         build_stamps = builder.gen_build()
         generator.build(comp_name, "phony", build_stamps)

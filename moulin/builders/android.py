@@ -7,11 +7,11 @@ Android open source project (AOSP) builder module
 import os.path
 
 
-def get_builder(conf, name, src_stamps, generator):
+def get_builder(conf, name, build_dir, src_stamps, generator):
     """
     Return configured AndroidBuilder class
     """
-    return AndroidBuilder(conf, name, src_stamps, generator)
+    return AndroidBuilder(conf, name, build_dir, src_stamps, generator)
 
 
 def gen_build_rules(generator):
@@ -36,12 +36,12 @@ class AndroidBuilder:
     """
     AndroidBuilder class generates Ninja rules for given Android build configuration
     """
-    def __init__(self, conf, name, src_stamps, generator):
+    def __init__(self, conf, name, build_dir, src_stamps, generator):
         self.conf = conf
         self.name = name
         self.generator = generator
         self.src_stamps = src_stamps
-        self.build_dir = self.conf["build-dir"]
+        self.build_dir = build_dir
 
     def gen_build(self):
         """Generate ninja rules to build AOSP"""
