@@ -62,7 +62,7 @@ def gen_build_rules(generator):
     ])
     generator.rule("yocto_build",
                    command=f'bash -c "{cmd}"',
-                   description="Yocto Build",
+                   description="Yocto Build: $name",
                    pool="console")
 
 
@@ -180,7 +180,8 @@ class YoctoBuilder:
                              "yocto_build",
                              deps,
                              variables=dict(common_variables,
-                                            target=self.conf["build_target"]))
+                                            target=self.conf["build_target"],
+                                            name=self.name))
 
         return targets
 
