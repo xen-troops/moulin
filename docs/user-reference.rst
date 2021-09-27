@@ -261,7 +261,7 @@ Builders are the `moulin` plugins responsible for actual image building. Right
 now only `yocto` and `android` are supported.
 
 `moulin` will generate phony Ninja target
-:code:`build-{component_name}` for every component. It can be used to
+:code:`{component_name}` for every component. It can be used to
 build certain component. Please note that this will not build **only**
 given component. Any prerequisites will be fetched and build as well.
 
