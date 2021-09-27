@@ -13,4 +13,5 @@ moulin - meta-build system
    about
    quickstart
    user-reference
+   usage-notes
 
