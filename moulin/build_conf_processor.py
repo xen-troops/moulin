@@ -73,7 +73,8 @@ def apply_parameters(tree, args):
     del tree["parameters"]
     chosen = _choose_parameters(parameters, args)
     for param in chosen:
-        _apply_overrides(tree, param["overrides"])
+        if "overrides" in param:
+            _apply_overrides(tree, param["overrides"])
 
 
 def _choose_parameters(parameters, args):
