@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 SETUP_ARGS: Dict[str, Any] = dict(
     name='moulin',  # Required
-    version='0.1',  # Required
+    version='0.2',  # Required
     description='Meta-build system',  # Required
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,6 +24,8 @@ SETUP_ARGS: Dict[str, Any] = dict(
     ],  # Required
     install_requires=[
         'pygit2',
+        'importlib_metadata',
+        'packaging',
     ],
     python_requires=">=3.6",
     entry_points={'console_scripts': ['moulin = moulin.main:console_entry']})
