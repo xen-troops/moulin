@@ -22,6 +22,9 @@ SETUP_ARGS: Dict[str, Any] = dict(
         "moulin.fetchers",
         "moulin.builders",
     ],  # Required
+    install_requires=[
+        'pygit2',
+    ],
     python_requires=">=3.6",
     entry_points={'console_scripts': ['moulin = moulin.main:console_entry']})
 setup(**SETUP_ARGS)
