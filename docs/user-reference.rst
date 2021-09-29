@@ -27,9 +27,19 @@ YAML file should consist of number of pre-defined keys/sections which are discus
 unknown keys are ignored. Right now only the following top-level keys are supported:
 
 * :code:`desc` - mandatory
+* :code:`min_ver` - optional
 * :code:`components` - mandatory
 * :code:`variables` - optional
 * :code:`parameters` - optional
+
+Minimal Version
+^^^^^^^^^^^^^^^
+
+Optional :code:`min_ver` section should hold minimal required version
+of `moulin`. This is a text string that conforms `PEP-440
+<https://www.python.org/dev/peps/pep-0440/>`_. For example
+:code:`min_ver: "0.2"`. `moulin` will compare this with own version
+and will stop if required version is newer.
 
 Mandatory sections: "desc" and "components"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

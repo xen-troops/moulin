@@ -7,6 +7,8 @@ Moulin main entry point
 import argparse
 import yaml
 import sys
+import importlib_metadata
+from packaging.version import Version
 
 from moulin import build_generator
 from moulin import build_conf_processor
@@ -34,6 +36,14 @@ def console_entry():
 
     if "desc" not in conf:
         raise Exception("'desc' field in config file is mandatory!")
+
+    if "min_ver" in conf:
+        our_ver = Version(importlib_metadata.version("moulin"))
+        req_ver = Version(conf["min_ver"])
+        if our_ver < req_ver:
+            raise Exception(
+                f"Config file requires version {req_ver}, while you are running mouilin {our_ver}"
+            )
 
     prog = f"{sys.argv[0]} {args.conf}"
     desc = f"Config file description: {conf['desc']}"
