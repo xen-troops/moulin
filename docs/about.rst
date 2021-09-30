@@ -51,6 +51,13 @@ Requirements and Installation
 `moulin` requires Python 3.6+ to run. You might need :code:`pip` or
 :code:`pip3` tool to install it.
 
+Also `moulin` requires :code:`pygit2`. If it is not installed on your
+system, :code:`pip` will try to install it from repository. It may
+fail in case if you are missing :code:`libgit2` development files or
+if installed :code:`libgit2` is too old. So, it is better to install
+:code:`pygit2` globally. For example, on Ubuntu 18.04 you need to
+install :code:`python3-pygit2` package.
+
 `moulin` source code is stored at `GitHub
 <https://github.com/xen-troops/moulin>`_.
 
