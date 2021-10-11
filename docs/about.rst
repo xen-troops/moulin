@@ -68,3 +68,15 @@ storage using ::
 
 command. Make sure that your :code:`PATH` environment variable
 includes :code:`/home/${USER}/.local/bin`.
+
+You can encounter problem with `pygit2` installation on some Ubuntu or
+Debian distribution due to this
+`bug<https://github.com/pypa/pip/issues/4222>`_. In this case you will
+need to use the following command ::
+
+  PIP_IGNORE_INSTALLED=0 pip3 install --user git+https://github.com/xen-troops/moulin
+
+as a workaround.
+
+Alternatively, you can clone the mentioned git repository and invoke
+:code:`moulin.py` directly.
