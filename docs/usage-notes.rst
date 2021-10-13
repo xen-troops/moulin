@@ -29,3 +29,33 @@ For example to build only :code:`kernel-module-gles` in :code:`domd`:
   $ . poky/oe-init-build-env build-domd
   $ bitbake kernel-module-gles
 
+Using different versions of same repo
+-------------------------------------
+
+Two components use same repo :code:`meta-zzz` but from different forks/branches.
+Pay attention to lines :code:`dir` and last line for :code:`layers` used by :code:`component_b`.
+
+.. code-block:: yaml
+
+  component_a:
+    ...
+    sources:
+      - type: git
+        url: "https://github.com/zzz-org/meta-zzz.git"
+        rev: master
+      layers:
+        ...
+        - "../meta-zzz/meta-zxc-layer"
+
+  component_b:
+    ...
+    sources:
+      ...
+      - type: git
+        url: "https://github.com/my_fork_of_zzz-org/meta-zzz.git"
+        rev: "my_dev_branch"
+        dir: "my_dev_folder"
+      layers:
+        ...
+        - "../my_dev_folder/meta-zxc-layer"
+
