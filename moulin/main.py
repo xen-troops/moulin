@@ -6,6 +6,7 @@ Moulin main entry point
 
 import argparse
 import yaml
+import logging
 import sys
 import importlib_metadata
 from packaging.version import Version
@@ -17,6 +18,7 @@ try:
     from yaml import CLoader as YamlLoader
 except ImportError:
     from yaml import Loader as YamlLoader
+log = logging.getLogger(__name__)
 
 
 def console_entry():
@@ -30,12 +32,17 @@ def console_entry():
     parser.add_argument('--help-config',
                         action='store_true',
                         help="Show help for given config file")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args, extra_opts = parser.parse_known_args()
     conf = yaml.load(open(args.conf), Loader=YamlLoader)
 
     if "desc" not in conf:
         raise Exception("'desc' field in config file is mandatory!")
+    loglevel = logging.INFO
+    if args.verbose:
+        loglevel = logging.DEBUG
+    logging.basicConfig(level=loglevel, format="[%(levelname)s] %(message)s")
 
     if "min_ver" in conf:
         our_ver = Version(importlib_metadata.version("moulin"))
