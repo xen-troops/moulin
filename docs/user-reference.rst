@@ -20,6 +20,13 @@ If YAML file contains :code:`parameters` key, it is possible to invoke
 depends of contents of YAML file and can be viewed using
 :code:`--help-config` command line option.
 
+Verbose output
+^^^^^^^^^^^^^^
+
+Use :code:`-v` or :code:`--verbose` command line option to increase
+verbosity of output. With this option enabled `moulin` will give more
+information about what it is doing.
+
 YAML sections
 -------------
 
