@@ -29,6 +29,7 @@ def console_entry():
                         action='store_true',
                         help="Show help for given config file")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--dump", action="store_true", help="Dump processed YAML document")
 
     args, extra_opts = parser.parse_known_args()
 
@@ -60,6 +61,10 @@ def console_entry():
 
     config_args = config_argparser.parse_args(extra_opts)
     conf.complete_init(vars(config_args))
+
+    if args.dump:
+        print(conf.dumps())
+
     log.info("Generating build.ninja")
 
     document = conf.get_document()
