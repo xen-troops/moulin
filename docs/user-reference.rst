@@ -27,6 +27,15 @@ Use :code:`-v` or :code:`--verbose` command line option to increase
 verbosity of output. With this option enabled `moulin` will give more
 information about what it is doing.
 
+Dumping intermediate state
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:code:`--dump` command line option can be used to force `moulin` to
+dump intermediate state of processed YAML file. You will see contents
+of your build config after applying all parameters and expanding all
+variables. This can come in help during debugging of your build,
+because you can see what exactly is passed to fetchers and builders.
+
 YAML sections
 -------------
 
