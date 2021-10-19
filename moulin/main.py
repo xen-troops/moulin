@@ -17,8 +17,8 @@ from moulin.build_conf import MoulinConfiguration
 log = logging.getLogger(__name__)
 
 
-def console_entry():
-    """Console entry point"""
+def moulin_entry():
+    """Console entry point for moulin"""
 
     parser = argparse.ArgumentParser(description='Moulin meta-build system')
     parser.add_argument('conf',
