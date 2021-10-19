@@ -40,11 +40,6 @@ On other hand, `moulin` project files describe the whole build, with
 source code locations, build options, dependencies between images and
 optional parameters.
 
-Internally `moulin` does not depend on YAML, so it is possible to
-store build configuration in format that can be serialized in Python
-basic containers like :code:`dict` and :code:`list`. YAML was chosen
-as a main format because it is both human- and machine-readable.
-
 Requirements and Installation
 -----------------------------
 
