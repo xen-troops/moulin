@@ -6,11 +6,11 @@
 Console entry point for moulin
 """
 
-from moulin.main import console_entry
+from moulin.main import moulin_entry
 
 
 def main():
-    console_entry()
+    moulin_entry()
 
 
 if __name__ == "__main__":
