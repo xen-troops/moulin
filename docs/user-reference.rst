@@ -144,7 +144,7 @@ Often it is desired to have some options for a build. For example one
 can want to support a number of different HW boards, or to enable
 additional features. It would be not feasible to have separate YAML
 for every board-feature combination. This is where parameters come to
-help. All parameters should be stored in :code:`sources` section:
+help. All parameters should be stored in :code:`parameters` section:
 
 .. code-block:: yaml
 
