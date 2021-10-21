@@ -1,5 +1,7 @@
-User reference manual
-=====================
+Moulin User reference manual
+============================
+
+.. _invoking_moulin:
 
 Invoking moulin
 ---------------
@@ -36,6 +38,8 @@ of your build config after applying all parameters and expanding all
 variables. This can come in help during debugging of your build,
 because you can see what exactly is passed to fetchers and builders.
 
+.. _moulin_yaml_sections:
+
 YAML sections
 -------------
 
@@ -45,6 +49,7 @@ unknown keys are ignored. Right now only the following top-level keys are suppor
 * :code:`desc` - mandatory
 * :code:`min_ver` - optional
 * :code:`components` - mandatory
+* :code:`images` - optional. See `rouge` documentation.
 * :code:`variables` - optional
 * :code:`parameters` - optional
 
