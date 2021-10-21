@@ -66,7 +66,7 @@ includes :code:`/home/${USER}/.local/bin`.
 
 You can encounter problem with `pygit2` installation on some Ubuntu or
 Debian distribution due to this
-`bug<https://github.com/pypa/pip/issues/4222>`_. In this case you will
+`bug <https://github.com/pypa/pip/issues/4222>`_. In this case you will
 need to use the following command ::
 
   PIP_IGNORE_INSTALLED=0 pip3 install --user git+https://github.com/xen-troops/moulin
