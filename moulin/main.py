@@ -31,6 +31,24 @@ def moulin_entry():
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--dump", action="store_true", help="Dump processed YAML document")
 
+    if additional_opts:
+        for option_args, option_kwargs in additional_opts:
+            parser.add_argument(*option_args, **option_kwargs)
+    if exclusive_opts:
+        for exclusive_set in exclusive_opts:
+            group = parser.add_mutually_exclusive_group()
+            for option_args, option_kwargs in exclusive_set:
+                group.add_argument(*option_args, **option_kwargs)
+
+    return parser
+
+
+def _handle_shared_opts(description: str,
+                        additional_opts: List[OptionDef] = None,
+                        exclusive_opts: List[List[OptionDef]] = None):
+
+    parser = _prepre_shared_opts(description, additional_opts, exclusive_opts)
+
     args, extra_opts = parser.parse_known_args()
 
     loglevel = logging.INFO
@@ -57,7 +75,7 @@ def moulin_entry():
 
     if args.help_config:
         config_argparser.print_help()
-        return
+        sys.exit(0)
 
     config_args = config_argparser.parse_args(extra_opts)
     conf.complete_init(vars(config_args))
@@ -65,6 +83,14 @@ def moulin_entry():
     if args.dump:
         print(conf.dumps())
 
+    return conf, args
+
+
+def moulin_entry():
+    """Console entry point for moulin"""
+
+    conf, args = _handle_shared_opts(
+        f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}')
     log.info("Generating build.ninja")
 
     document = conf.get_document()
