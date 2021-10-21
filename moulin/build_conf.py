@@ -215,6 +215,10 @@ class MoulinConfiguration:
         constructor = yaml.constructor.SafeConstructor()
         return constructor.construct_document(self._node)
 
+    def get_root_node(self):
+        "Return root YAML node"
+        return self._node
+
 
 #
 # Variable processing helpers.
