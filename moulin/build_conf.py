@@ -187,7 +187,8 @@ class MoulinConfiguration:
 
     def complete_init(self, options):
         "Complete object initialization with given options"
-        log.info("Completing setup with following parameters:")
+        if options:
+            log.info("Completing setup with following parameters:")
         for param_name, param_value in options.items():
             log.info("  %s: %s", param_name, param_value)
             self._params[param_name].apply_overrides(self._node, param_value)
