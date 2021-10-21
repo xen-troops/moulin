@@ -13,5 +13,6 @@ moulin - meta-build system
    about
    quickstart
    user-reference
+   rouge
    usage-notes
 
