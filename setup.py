@@ -21,6 +21,7 @@ SETUP_ARGS: Dict[str, Any] = dict(
         "moulin",
         "moulin.fetchers",
         "moulin.builders",
+        "moulin.rouge",
     ],  # Required
     install_requires=[
         'pygit2',
