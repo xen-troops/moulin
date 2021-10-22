@@ -205,7 +205,7 @@ class Ext4(BlockEntry):
                     raise YAMLProcessingError(f"Can't find file '{local_name}'",
                                               local_node.start_mark)
                 self._files.append((remote_name, local_name))
-        files_size = sum([os.path.getsize(x[1]) for x in self._files]) + 2 * 1024 * 1024
+        files_size = sum([os.path.getsize(x[1]) for x in self._files]) + 8 * 1024 * 1024
         size_node = get_scalar_node(node, "size")
         if size_node:
             self._size = _parse_size(size_node)
