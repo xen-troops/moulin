@@ -52,12 +52,19 @@ class GitFetcher:
     def gen_fetch(self):
         """Generate instruction to fetch git repo"""
         clone_target = self.git_dir
-        checkout_stamp = create_stamp_name(self.build_dir, self.url,
+        checkout_stamp = create_stamp_name(self.build_dir, self.url, self.git_rev,
                                            "checkout")
 
         # Do not checkout repos for the second time
         if checkout_stamp in _SEEN_REPOS:
             return checkout_stamp
+
+        # if layer exists but with anpthe revision - this is an error
+        for stamp in _SEEN_REPOS:
+            if stamp.find(self.url) != -1 and stamp.find(self.git_rev) != -1:
+                raise Exception(
+                    (f"Layer {self.url} already exists but with another revision, expected {self.git_rev}."
+                     + f"Maybe layer {self.url} is mentioned twice in the soure list."))
 
         _SEEN_REPOS.append(checkout_stamp)
         self.generator.build(clone_target,
