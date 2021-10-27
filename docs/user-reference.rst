@@ -339,7 +339,9 @@ needed if you are building multiple VMs with cross-dependencies.
   note that each entry in :code:`conf` list is not a :code:`key:value`
   pair, but another list of two items. We use this format because it
   is possible to have multiple :code:`local.conf` entries with the
-  same key.
+  same key. Those entries will not be written straight into
+  :code:`local.conf`. Instead new file :code:`moulin.conf` will be
+  created. This file then will be included from :code:`local.conf`.
 
 * :code:`layers` - list of additional layers. Those layers will be
   added to the build using :code:`bitbake-layers add-layer {layers}`
