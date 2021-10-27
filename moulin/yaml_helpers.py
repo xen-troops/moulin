@@ -2,8 +2,9 @@
 # Copyright 2021 EPAM Systems
 """YAML processing helper functions and objects"""
 
-from typing import Optional
+from typing import Optional, TypeVar, Tuple, cast
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode, Node
+from yaml.constructor import SafeConstructor
 from yaml import Mark
 
 
@@ -57,3 +58,69 @@ def get_sequence_node(node: MappingNode, name: str) -> Optional[SequenceNode]:
     if not isinstance(value, SequenceNode):
         raise YAMLProcessingError("Expected sequence", value.start_mark)
     return value
+
+
+T = TypeVar('T')  # pylint: disable=invalid-name
+
+yaml_constructor = SafeConstructor()
+
+
+def get_typed_value(mapping_node: MappingNode,
+                    name: str,
+                    expected_type: type,
+                    default: Optional[T] = None) -> Tuple[Optional[T], Optional[Mark]]:
+    "Return scalar node with given name from mapping as value of type T"
+    node = get_scalar_node(mapping_node, name)
+    if not node:
+        return default, None
+    val = yaml_constructor.construct_object(node)
+    if not isinstance(val, expected_type):
+        raise YAMLProcessingError(
+            f"Expected value of type {expected_type.__name__} for " +
+            f" '{name}', not {type(val).__name__}", node.start_mark)
+    return cast(Optional[T], val), node.start_mark
+
+
+def get_mandatory_typed_value(mapping_node: MappingNode, name: str,
+                              expected_type: type) -> Tuple[T, Mark]:
+    "Return mandatory scalar node with given name from mapping as value of type T"
+    ret, mark = get_typed_value(mapping_node, name, expected_type)
+    if not ret or not mark:
+        raise YAMLProcessingError(f"{name} key is mandatory", mapping_node.start_mark)
+    return ret, mark
+
+
+def get_boolean_value(mapping_node: MappingNode,
+                      name: str,
+                      default: Optional[bool] = None) -> Tuple[Optional[bool], Optional[Mark]]:
+    "Return scalar node with given name from mapping as a boolean value"
+    return get_typed_value(mapping_node, name, bool, default)
+
+
+def get_str_value(mapping_node: MappingNode,
+                  name: str,
+                  default: Optional[str] = None) -> Tuple[Optional[str], Optional[Mark]]:
+    "Return scalar node with given name from mapping as a string value"
+    return get_typed_value(mapping_node, name, str, default)
+
+
+def get_int_value(mapping_node: MappingNode,
+                  name: str,
+                  default: Optional[int] = None) -> Tuple[Optional[int], Optional[Mark]]:
+    "Return scalar node with given name from mapping as integer value"
+    return get_typed_value(mapping_node, name, int, default)
+
+
+def get_mandatory_boolean_value(mapping_node: MappingNode, name: str) -> Tuple[bool, Mark]:
+    "Return scalar node with given name from mapping as a boolean value"
+    return get_mandatory_typed_value(mapping_node, name, bool)
+
+
+def get_mandatory_str_value(mapping_node: MappingNode, name: str) -> Tuple[str, Mark]:
+    "Return scalar node with given name from mapping as a string value"
+    return get_mandatory_typed_value(mapping_node, name, str)
+
+
+def get_mandatory_int_value(mapping_node: MappingNode, name: str) -> Tuple[int, Mark]:
+    "Return scalar node with given name from mapping as integer value"
+    return get_mandatory_typed_value(mapping_node, name, int)
