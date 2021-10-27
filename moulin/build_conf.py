@@ -10,7 +10,8 @@ from packaging.version import Version
 
 import yaml
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode, Node
-from moulin.yaml_helpers import get_scalar_node, get_mapping_node, YAMLProcessingError
+from moulin.yaml_helpers import get_boolean_value, get_str_value, get_mandatory_str_value, \
+    get_mapping_node, YAMLProcessingError
 
 log = logging.getLogger(__name__)
 
@@ -22,12 +23,7 @@ class ParameterVariant:
 
     def __init__(self, name: str, node: MappingNode):
         self.name = name
-        def_node = get_scalar_node(node, "default")
-        if def_node:
-            self.default = bool(def_node.value)
-        else:
-            self.default = False
-
+        self.default, _ = get_boolean_value(node, "default", default=False)
         self._overrides: Optional[MappingNode] = None
         overrides_node = get_mapping_node(node, "overrides")
         if overrides_node:
@@ -70,10 +66,7 @@ class Parameter:
 
     def __init__(self, name: str, node: MappingNode):
         self.name = name
-        desc_node = get_scalar_node(node, "desc")
-        if not desc_node:
-            raise YAMLProcessingError("'desc' field is mandatory", node.start_mark)
-        self.desc = str(desc_node.value)
+        self.desc, _ = get_mandatory_str_value(node, "desc")
 
         self.variants: Dict[str, ParameterVariant] = {}
         vname: Node
@@ -129,16 +122,13 @@ class MoulinConfiguration:
     def __init__(self, node: MappingNode):
         self._node = node
 
-        version_node = get_scalar_node(node, "min_ver")
-        if not version_node:
+        min_ver, _ = get_str_value(node, "min_ver")
+        if not min_ver:
             self.min_ver = None
         else:
-            self.min_ver = Version(version_node.value)
+            self.min_ver = Version(min_ver)
 
-        desc_node = get_scalar_node(node, "desc")
-        if not desc_node:
-            raise YAMLProcessingError("'desc' field is mandatory", node.start_mark)
-        self.desc = str(desc_node.value)
+        self.desc, _ = get_mandatory_str_value(node, "desc")
 
         parameters_node = get_mapping_node(node, "parameters")
         self._params: Dict[str, Parameter] = {}
