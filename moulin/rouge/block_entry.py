@@ -13,7 +13,8 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from yaml.nodes import MappingNode, ScalarNode
 from moulin.rouge import sfdisk, ext_utils
-from moulin.yaml_helpers import get_scalar_node, get_mapping_node, YAMLProcessingError
+from moulin.yaml_helpers import get_scalar_node, get_str_value, get_mandatory_str_value, \
+    get_mapping_node, YAMLProcessingError
 
 log = logging.getLogger(__name__)
 
@@ -63,12 +64,10 @@ class GPT(BlockEntry):
     @staticmethod
     def _process_entry(node: MappingNode):
         entry_obj = construct_entry(node)
-        gpt_type_node = get_scalar_node(node, "gpt_type")
-        if not gpt_type_node:
+        gpt_type, _ = get_str_value(node, "gpt_type")
+        if not gpt_type:
             log.warning("No GPT type is provided %s, using default", node.start_mark)
             gpt_type = "8DA63339-0007-60C0-C436-083AC8230908"
-        else:
-            gpt_type = gpt_type_node.value
 
         return (entry_obj, gpt_type)
 
@@ -92,12 +91,9 @@ class RawImage(BlockEntry):
 
     def __init__(self, node: MappingNode):
 
-        file_node = get_scalar_node(node, "image_path")
-        if not file_node:
-            raise YAMLProcessingError("'image_path' is required", node.start_mark)
-        fname = file_node.value
+        fname, mark = get_mandatory_str_value(node, "image_path")
         if not os.path.exists(fname):
-            raise YAMLProcessingError(f"Can't find file '{fname}'", file_node.start_mark)
+            raise YAMLProcessingError(f"Can't find file '{fname}'", mark)
         self.fname = fname
 
         fsize = os.path.getsize(fname)
@@ -124,15 +120,12 @@ class AndroidSparse(BlockEntry):
 
     def __init__(self, node: MappingNode):
 
-        file_node = get_scalar_node(node, "image_path")
-        if not file_node:
-            raise YAMLProcessingError("'image_path' is required", node.start_mark)
-        fname = file_node.value
+        fname, mark = get_mandatory_str_value(node, "image_path")
         if not os.path.exists(fname):
-            raise YAMLProcessingError(f"Can't find file '{fname}'", file_node.start_mark)
+            raise YAMLProcessingError(f"Can't find file '{fname}'", mark)
         self._fname = fname
 
-        fsize = self._read_size(file_node.start_mark)
+        fsize = self._read_size(mark)
         size_node = get_scalar_node(node, "size")
         if size_node:
             self._size = _parse_size(size_node)
@@ -240,13 +233,9 @@ _ENTRY_TYPES = {
 
 def construct_entry(node: MappingNode) -> BlockEntry:
     "Construct BlockEntry object from YAML node"
-    type_node = get_scalar_node(node, "type")
-    if not type_node:
-        raise YAMLProcessingError("Entry 'type' is required", node.start_mark)
-
-    entry_type: str = type_node.value
+    entry_type, mark = get_mandatory_str_value(node, "type")
     if entry_type not in _ENTRY_TYPES:
-        raise YAMLProcessingError(f"Unknown type '{entry_type}'", type_node.start_mark)
+        raise YAMLProcessingError(f"Unknown type '{entry_type}'", mark)
 
     return _ENTRY_TYPES[entry_type](node)
 
