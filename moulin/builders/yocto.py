@@ -127,7 +127,7 @@ class YoctoBuilder:
         }
 
         # First we need to ensure that "conf" dir exists
-        env_target = os.path.join(self.yocto_dir, self.work_dir, "conf")
+        env_target = os.path.join(self.yocto_dir, self.work_dir, "conf", "local.conf")
         self.generator.build(env_target,
                              "yocto_init_env",
                              self.src_stamps,
