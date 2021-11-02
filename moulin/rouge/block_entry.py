@@ -13,6 +13,7 @@ from typing import List, Tuple, NamedTuple
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from yaml.nodes import MappingNode, ScalarNode
+from yaml import Mark
 from moulin.rouge import sfdisk, ext_utils
 from moulin.yaml_helpers import get_scalar_node, get_str_value, get_mandatory_str_value, \
     get_mapping_node, YAMLProcessingError
@@ -46,7 +47,8 @@ class GPT(BlockEntry):
     "Represents GUID Partition Table"
 
     def __init__(self, node: MappingNode):
-        entries: List[GPTPartition] = []
+        self._partitions: List[GPTPartition] = []
+        self._size: int = 0
 
         partitions = get_mapping_node(node, "partitions")
         if not partitions:
@@ -57,13 +59,12 @@ class GPT(BlockEntry):
                 raise YAMLProcessingError("Excepted mapping node", part.start_mark)
 
             entry_obj, gpt_type = self._process_entry(part)
-            entries.append(
-                GPTPartition(label, gpt_type, start=0, size=entry_obj.size(), entry=entry_obj))
-
-        self._partitions, self._size = sfdisk.fixup_partition_table(entries)
+            self._partitions.append(GPTPartition(label, gpt_type, start=0, size=0, entry=entry_obj))
 
     def size(self) -> int:
         "Returns size in bytes"
+        if not self._size:
+            self._complete_init()
         return self._size
 
     @staticmethod
@@ -76,7 +77,13 @@ class GPT(BlockEntry):
 
         return (entry_obj, gpt_type)
 
+    def _complete_init(self):
+        partitions = [x._replace(size=x.entry.size()) for x in self._partitions]
+        self._partitions, self._size = sfdisk.fixup_partition_table(partitions)
+
     def write(self, fp, offset):
+        if not self._size:
+            self._complete_init()
         if offset == 0:
             sfdisk.write(fp, self._partitions)
         else:
@@ -100,57 +107,50 @@ class RawImage(BlockEntry):
     "Represents raw image file which needs to be copied as is"
 
     def __init__(self, node: MappingNode):
+        self._node = node
+        self._fname = get_mandatory_str_value(self._node, "image_path")[0]
+        self._size = 0
 
-        fname, mark = get_mandatory_str_value(node, "image_path")
-        if not os.path.exists(fname):
-            raise YAMLProcessingError(f"Can't find file '{fname}'", mark)
-        self.fname = fname
-
-        fsize = os.path.getsize(fname)
-        size_node = get_scalar_node(node, "size")
+    def _complete_init(self):
+        mark = get_mandatory_str_value(self._node, "image_path")[1]
+        if not os.path.exists(self._fname):
+            raise YAMLProcessingError(f"Can't find file '{self._fname}'", mark)
+        fsize = os.path.getsize(self._fname)
+        size_node = get_scalar_node(self._node, "size")
         if size_node:
             self._size = _parse_size(size_node)
             if fsize > self._size:
                 raise YAMLProcessingError(
-                    f"File '{fname}' is bigger than partition entry ({self.size})",
+                    f"File '{self._fname}' is bigger than partition entry ({self._size})",
                     size_node.start_mark)
         else:
             self._size = fsize
 
     def size(self) -> int:
         "Returns size in bytes"
+        if not self._size:
+            self._complete_init()
         return self._size
 
     def write(self, fp, offset):
-        ext_utils.dd(self.fname, fp, offset)
+        if not self._size:
+            self._complete_init()
+        ext_utils.dd(self._fname, fp, offset)
 
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
-        return [self.fname]
+        return [self._fname]
 
 
 class AndroidSparse(BlockEntry):
     "Represents android sparse image file"
 
     def __init__(self, node: MappingNode):
+        self._node = node
+        self._fname = get_mandatory_str_value(self._node, "image_path")[0]
+        self._size = 0
 
-        fname, mark = get_mandatory_str_value(node, "image_path")
-        if not os.path.exists(fname):
-            raise YAMLProcessingError(f"Can't find file '{fname}'", mark)
-        self._fname = fname
-
-        fsize = self._read_size(mark)
-        size_node = get_scalar_node(node, "size")
-        if size_node:
-            self._size = _parse_size(size_node)
-            if fsize > self._size:
-                raise YAMLProcessingError(
-                    f"Un-sparesd file '{fname}' is bigger than partition entry",
-                    size_node.start_mark)
-        else:
-            self._size = fsize
-
-    def _read_size(self, mark):
+    def _read_size(self, mark: Mark):
         # pylint: disable=invalid-name
         FMT = "<IHHHHIIII"
         MAGIC = 0xed26ff3a
@@ -166,11 +166,30 @@ class AndroidSparse(BlockEntry):
             # blk_sz * total_blks
             return header[5] * header[6]
 
+    def _complete_init(self):
+        mark = get_mandatory_str_value(self._node, "image_path")[1]
+        if not os.path.exists(self._fname):
+            raise YAMLProcessingError(f"Can't find file '{self._fname}'", mark)
+        fsize = self._read_size(mark)
+        size_node = get_scalar_node(self._node, "size")
+        if size_node:
+            self._size = _parse_size(size_node)
+            if fsize > self._size:
+                raise YAMLProcessingError(
+                    f"Un-sparesd file '{self._fname}' is bigger than partition entry",
+                    size_node.start_mark)
+        else:
+            self._size = fsize
+
     def size(self) -> int:
         "Returns size in bytes"
+        if not self._size:
+            self._complete_init()
         return self._size
 
     def write(self, fp, offset):
+        if not self._size:
+            self._complete_init()
         with NamedTemporaryFile("w+b", dir=".") as tmpf:
             ext_utils.simg2img(self._fname, tmpf)
             ext_utils.dd(tmpf, fp, offset)
@@ -200,8 +219,10 @@ class Ext4(BlockEntry):
     "Represents ext4 fs with list of files"
 
     def __init__(self, node: MappingNode):
-        files_node = get_mapping_node(node, "files")
-        self._files: List[Tuple[str, str]] = []
+        self._node = node
+        self._size = 0
+        self._files: List[Tuple[str, str, Mark]] = []
+        files_node = get_mapping_node(self._node, "files")
         if files_node:
             remote_node: ScalarNode
             local_node: ScalarNode
@@ -212,12 +233,15 @@ class Ext4(BlockEntry):
                                               remote_node.start_mark)
                 remote_name = remote_node.value
                 local_name = local_node.value
-                if not os.path.isfile(local_name):
-                    raise YAMLProcessingError(f"Can't find file '{local_name}'",
-                                              local_node.start_mark)
-                self._files.append((remote_name, local_name))
+                self._files.append((remote_name, local_name, local_node.start_mark))
+
+    def _complete_init(self):
+        for _, local_name, local_node in self._files:
+            if not os.path.isfile(local_name):
+                raise YAMLProcessingError(f"Can't find file '{local_name}'", local_node.start_mark)
+
         files_size = sum([os.path.getsize(x[1]) for x in self._files]) + 8 * 1024 * 1024
-        size_node = get_scalar_node(node, "size")
+        size_node = get_scalar_node(self._node, "size")
         if size_node:
             self._size = _parse_size(size_node)
             if files_size > self._size:
@@ -229,11 +253,15 @@ class Ext4(BlockEntry):
 
     def size(self) -> int:
         "Returns size in bytes"
+        if not self._size:
+            self._complete_init()
         return self._size
 
     def write(self, fp, offset):
+        if not self._size:
+            self._complete_init()
         with NamedTemporaryFile() as tempf, TemporaryDirectory() as tempd:
-            for remote, local in self._files:
+            for remote, local, _ in self._files:
                 shutil.copyfile(local, os.path.join(tempd, remote))
             tempf.truncate(self._size)
             ext_utils.mkext4fs(tempf, tempd)
