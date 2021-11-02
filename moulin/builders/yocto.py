@@ -50,7 +50,6 @@ def gen_build_rules(generator):
         "for x in $conf; do echo $$x >> $work_dir/conf/moulin.conf; done",
         "sed \"/require moulin\\.conf/d\" -i $work_dir/conf/local.conf",
         "echo 'require moulin.conf' >> $work_dir/conf/local.conf",
-        "touch $out",
     ])
     generator.rule("yocto_update_conf",
                    command=cmd,
@@ -144,10 +143,9 @@ class YoctoBuilder:
                              variables=dict(common_variables, layers=layers))
 
         # Next - update local.conf
-        local_conf_stamp = create_stamp_name(self.yocto_dir, self.work_dir,
-                                             "yocto", "lolcal_conf")
         if "conf" in self.conf:
             local_conf = _flatten_yocto_conf(self.conf["conf"])
+        local_conf_target = os.path.join(self.yocto_dir, self.work_dir, "conf", "moulin.conf")
         else:
             local_conf = []
 
@@ -160,14 +158,14 @@ class YoctoBuilder:
             for k, v in local_conf
         ]
 
-        self.generator.build(local_conf_stamp,
+        self.generator.build(local_conf_target,
                              "yocto_update_conf",
                              layers_stamp,
                              variables=dict(common_variables,
                                             conf=" ".join(local_conf_lines)))
         self.generator.newline()
 
-        self.generator.build(f"conf-{self.name}", "phony", local_conf_stamp)
+        self.generator.build(f"conf-{self.name}", "phony", local_conf_target)
         self.generator.newline()
 
         # Next step - invoke bitbake. At last :)
@@ -179,7 +177,7 @@ class YoctoBuilder:
             os.path.join(self.yocto_dir, d)
             for d in self.conf.get("additional_deps", [])
         ]
-        deps.append(local_conf_stamp)
+        deps.append(local_conf_target)
         self.generator.build(targets,
                              "yocto_build",
                              deps,
