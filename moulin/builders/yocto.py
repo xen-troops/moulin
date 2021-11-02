@@ -66,7 +66,8 @@ def gen_build_rules(generator):
     generator.rule("yocto_build",
                    command=f'bash -c "{cmd}"',
                    description="Yocto Build: $name",
-                   pool="console")
+                   pool="console",
+                   restat=True)
 
 
 def _flatten_yocto_conf(conf):
