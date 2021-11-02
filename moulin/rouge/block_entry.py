@@ -8,6 +8,7 @@ import os.path
 import struct
 import shutil
 import logging
+import itertools
 from typing import List, Tuple, NamedTuple
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
@@ -26,6 +27,10 @@ class BlockEntry():
 
     def write(self, _file, _offset):
         "write() in base class does nothing"
+
+    def get_deps(self) -> List[str]:  # pylint: disable=no-self-use
+        "get_deps() in base class does nothing"
+        return []
 
 
 class GPTPartition(NamedTuple):
@@ -85,6 +90,11 @@ class GPT(BlockEntry):
         for part in self._partitions:
             part.entry.write(fp, part.start + offset)
 
+    def get_deps(self) -> List[str]:
+        "Return list of dependencies needed to build this block"
+        return list(itertools.chain().from_iterable(
+            [part.entry.get_deps() for part in self._partitions]))
+
 
 class RawImage(BlockEntry):
     "Represents raw image file which needs to be copied as is"
@@ -113,6 +123,10 @@ class RawImage(BlockEntry):
 
     def write(self, fp, offset):
         ext_utils.dd(self.fname, fp, offset)
+
+    def get_deps(self) -> List[str]:
+        "Return list of dependencies needed to build this block"
+        return [self.fname]
 
 
 class AndroidSparse(BlockEntry):
@@ -160,6 +174,10 @@ class AndroidSparse(BlockEntry):
         with NamedTemporaryFile("w+b", dir=".") as tmpf:
             ext_utils.simg2img(self._fname, tmpf)
             ext_utils.dd(tmpf, fp, offset)
+
+    def get_deps(self) -> List[str]:
+        "Return list of dependencies needed to build this block"
+        return [self._fname]
 
 
 class EmptyEntry(BlockEntry):
@@ -220,6 +238,10 @@ class Ext4(BlockEntry):
             tempf.truncate(self._size)
             ext_utils.mkext4fs(tempf, tempd)
             ext_utils.dd(tempf, fp, offset)
+
+    def get_deps(self) -> List[str]:
+        "Return list of dependencies needed to build this block"
+        return [f[1] for f in self._files]
 
 
 _ENTRY_TYPES = {
