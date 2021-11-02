@@ -2,7 +2,7 @@
 # Copyright 2021 EPAM Systems
 """YAML processing helper functions and objects"""
 
-from typing import Optional, TypeVar, Tuple, cast
+from typing import Optional, TypeVar, Tuple, List, Any, cast
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode, Node
 from yaml.constructor import SafeConstructor
 from yaml import Mark
@@ -58,6 +58,38 @@ def get_sequence_node(node: MappingNode, name: str) -> Optional[SequenceNode]:
     if not isinstance(value, SequenceNode):
         raise YAMLProcessingError("Expected sequence", value.start_mark)
     return value
+
+
+def get_mandatory_scalar_node(node: MappingNode, name: str) -> ScalarNode:
+    "Return mandatory scalar node with given name from mapping"
+    ret = get_scalar_node(node, name)
+    if not ret:
+        raise YAMLProcessingError(f"Key '{name} is mandatory'", node.start_mark)
+    return ret
+
+
+def get_mandatory_mapping_node(node: MappingNode, name: str) -> MappingNode:
+    "Return mandatory mapping node with given name from mapping"
+    ret = get_mapping_node(node, name)
+    if not ret:
+        raise YAMLProcessingError(f"Key '{name} is mandatory'", node.start_mark)
+    return ret
+
+
+def get_mandatory_sequence_node(node: MappingNode, name: str) -> SequenceNode:
+    "Return mandatory sequence node with given name from mapping"
+    ret = get_sequence_node(node, name)
+    if not ret:
+        raise YAMLProcessingError(f"Key '{name} is mandatory'", node.start_mark)
+    return ret
+
+
+def flatten_list(node: SequenceNode) -> None:
+    "Flatten sequence of sequences in-place"
+    for element in node.value:
+        if isinstance(element, SequenceNode):
+            node.value.remove(element)
+            node.value.extend(element.value)
 
 
 T = TypeVar('T')  # pylint: disable=invalid-name
@@ -124,3 +156,13 @@ def get_mandatory_str_value(mapping_node: MappingNode, name: str) -> Tuple[str, 
 def get_mandatory_int_value(mapping_node: MappingNode, name: str) -> Tuple[int, Mark]:
     "Return scalar node with given name from mapping as integer value"
     return get_mandatory_typed_value(mapping_node, name, int)
+
+
+def get_mandatory_mapping(node: MappingNode, name: str) -> List[Tuple[Node, Any]]:
+    "Return mandatory sequence node with given name from mapping"
+    return get_mandatory_mapping_node(node, name).value
+
+
+def get_mandatory_sequence(node: MappingNode, name: str) -> List[Any]:
+    "Return mandatory sequence node with given name from mapping"
+    return get_mandatory_sequence_node(node, name).value
