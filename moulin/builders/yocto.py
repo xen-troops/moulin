@@ -56,9 +56,11 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         "sed \"/require moulin\\.conf/d\" -i $work_dir/conf/local.conf",
         "echo 'require moulin.conf' >> $work_dir/conf/local.conf",
     ])
-    generator.rule("yocto_update_conf",
-                   command=cmd,
-                   description="Update local.conf")
+    generator.rule(
+        "yocto_update_conf",
+        command=cmd,
+        description="Update local.conf",
+    )
     generator.newline()
 
     # Invoke bitbake. This rule uses "console" pool so we can see the bitbake output.
@@ -131,7 +133,7 @@ class YoctoBuilder:
         """Generate ninja rules to build yocto/poky"""
         common_variables = {
             "yocto_dir": self.yocto_dir,
-            "work_dir": self.work_dir
+            "work_dir": self.work_dir,
         }
 
         # First we need to ensure that "conf" dir exists
@@ -166,8 +168,7 @@ class YoctoBuilder:
 
         # '$' is a ninja escape character so we need to quote it
         local_conf_lines = [
-            shlex.quote(f'{k.replace("$", "$$")} = "{v.replace("$", "$$")}"')
-            for k, v in local_conf
+            shlex.quote(f'{k.replace("$", "$$")} = "{v.replace("$", "$$")}"') for k, v in local_conf
         ]
 
         self.generator.build(local_conf_target,

@@ -29,5 +29,7 @@ SETUP_ARGS: Dict[str, Any] = dict(
         'packaging',
     ],
     python_requires=">=3.6",
-    entry_points={'console_scripts': ['moulin = moulin.main:moulin_entry', 'rouge = moulin.main:rouge_entry']})
+    entry_points={
+        'console_scripts': ['moulin = moulin.main:moulin_entry', 'rouge = moulin.main:rouge_entry']
+    })
 setup(**SETUP_ARGS)
