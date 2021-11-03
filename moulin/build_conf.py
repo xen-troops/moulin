@@ -200,11 +200,6 @@ class MoulinConfiguration:
         "Return processed YAML stream"
         return yaml.serialize(self._node)
 
-    def get_document(self):
-        "Temporary bridge to old API. Returns the same result as yaml.load()"
-        constructor = yaml.constructor.SafeConstructor()
-        return constructor.construct_document(self._node)
-
     def get_root_node(self):
         "Return root YAML node"
         return self._node
