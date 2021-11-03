@@ -20,7 +20,9 @@ Design Principles
 similar in configuring and invoking to `moulin`. It can be used as a
 stand-alone tool: just provide only :code:`images:` section in your
 YAML file. Or you can include this section into the same file, which
-is used by `moulin` to share common options or variables.
+is used by `moulin` to share common options or variables. In latter
+case `moulin` will generate additional :code:`image-{image_name}`
+rules, so you can build images with Ninja.
 
 Requirements
 ------------
