@@ -6,17 +6,22 @@ Yocto builder module
 
 import os.path
 import shlex
+from typing import List, Tuple, cast
 from moulin.utils import create_stamp_name
+from yaml.nodes import MappingNode, SequenceNode
+from moulin import yaml_helpers as yh
+from moulin import ninja_syntax
 
 
-def get_builder(conf, name, build_dir, src_stamps, generator):
+def get_builder(conf: MappingNode, name: str, build_dir: str, src_stamps: List[str],
+                generator: ninja_syntax.Writer):
     """
     Return configured YoctoBuilder class
     """
     return YoctoBuilder(conf, name, build_dir, src_stamps, generator)
 
 
-def gen_build_rules(generator):
+def gen_build_rules(generator: ninja_syntax.Writer):
     """
     Generate yocto build rules for ninja
     """
@@ -69,28 +74,30 @@ def gen_build_rules(generator):
                    restat=True)
 
 
-def _flatten_yocto_conf(conf):
+def _flatten_yocto_conf(conf: SequenceNode) -> List[Tuple[str, str]]:
     """
     Flatten conf entries. While using YAML *entries syntax, we will get list of conf
     entries inside of other list. To overcome this, we need to move inner list 'up'
     """
 
     # Problem is conf entries that it is list itself
-    # But we can convert inner lists to tuples, which is also good thing
-    result = []
-    for entry in conf:
-        if isinstance(entry[0], list):
-            result.extend(entry)
+    result: List[Tuple[str, str]] = []
+    for entry in conf.value:
+        if not isinstance(entry, SequenceNode):
+            raise yh.YAMLProcessingError("Exptected array on 'conf' node", entry.start_mark)
+        if isinstance(entry.value[0], SequenceNode):
+            result.extend([(x.value[0].value, x.value[1].value) for x in entry.value])
         else:
-            result.append(entry)
-    return list(map(tuple, result))
+            result.append((entry.value[0].value, entry.value[1].value))
+    return result
 
 
 class YoctoBuilder:
     """
     YoctoBuilder class generates Ninja rules for given build configuration
     """
-    def __init__(self, conf, name, build_dir, src_stamps, generator):
+    def __init__(self, conf: MappingNode, name: str, build_dir: str, src_stamps: List[str],
+                 generator: ninja_syntax.Writer):
         self.conf = conf
         self.name = name
         self.generator = generator
@@ -102,20 +109,21 @@ class YoctoBuilder:
         # - work_dir is the build directory where we can find conf/local.conf, tmp and other
         #   directories. It is called "build" by default
         self.yocto_dir = build_dir
-        self.work_dir = self.conf.get("work_dir", "build")
+        self.work_dir = cast(str, yh.get_str_value(conf, "work_dir", default="build")[0])
 
-    def _get_external_src(self):
-        if "external_src" not in self.conf:
+    def _get_external_src(self) -> List[Tuple[str, str]]:
+        external_src_node = yh.get_mapping_node(self.conf, "external_src")
+        if not external_src_node:
             return []
 
-        ret = []
-        for (key, val) in self.conf["external_src"].items():
-            if isinstance(val, list):
-                path = os.path.join(val)
+        ret: List[Tuple[str, str]] = []
+        for key_node, val_node in external_src_node.value:
+            if isinstance(val_node, SequenceNode):
+                path = os.path.join(*[cast(str, x.value) for x in val_node.value])
             else:
-                path = val
+                path = val_node.value
             path = os.path.abspath(path)
-            ret.append((f"EXTERNALSRC_pn-{key}", path))
+            ret.append((f"EXTERNALSRC_pn-{key_node.value}", path))
 
         return ret
 
@@ -134,18 +142,22 @@ class YoctoBuilder:
                              variables=common_variables)
 
         # Then we need to add layers
-        layers = " ".join(self.conf.get("layers", []))
-        layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir,
-                                         "yocto", "layers")
+        layers_node = yh.get_sequence_node(self.conf, "layers")
+        if layers_node:
+            layers = " ".join([x.value for x in layers_node.value])
+        else:
+            layers = ""
+        layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
         self.generator.build(layers_stamp,
                              "yocto_add_layers",
                              env_target,
                              variables=dict(common_variables, layers=layers))
 
         # Next - update local.conf
-        if "conf" in self.conf:
-            local_conf = _flatten_yocto_conf(self.conf["conf"])
         local_conf_target = os.path.join(self.yocto_dir, self.work_dir, "conf", "moulin.conf")
+        local_conf_node = yh.get_sequence_node(self.conf, "conf")
+        if local_conf_node:
+            local_conf = _flatten_yocto_conf(local_conf_node)
         else:
             local_conf = []
 
@@ -161,8 +173,7 @@ class YoctoBuilder:
         self.generator.build(local_conf_target,
                              "yocto_update_conf",
                              layers_stamp,
-                             variables=dict(common_variables,
-                                            conf=" ".join(local_conf_lines)))
+                             variables=dict(common_variables, conf=" ".join(local_conf_lines)))
         self.generator.newline()
 
         self.generator.build(f"conf-{self.name}", "phony", local_conf_target)
@@ -170,19 +181,21 @@ class YoctoBuilder:
 
         # Next step - invoke bitbake. At last :)
         targets = [
-            os.path.join(self.yocto_dir, self.work_dir, t)
-            for t in self.conf["target_images"]
+            os.path.join(self.yocto_dir, self.work_dir, t.value)
+            for t in yh.get_mandatory_sequence(self.conf, "target_images")
         ]
-        deps = [
-            os.path.join(self.yocto_dir, d)
-            for d in self.conf.get("additional_deps", [])
-        ]
+        additional_deps_node = yh.get_sequence_node(self.conf, "additional_deps")
+        if additional_deps_node:
+            deps = [os.path.join(self.yocto_dir, d.value) for d in additional_deps_node.value]
+        else:
+            deps = []
         deps.append(local_conf_target)
         self.generator.build(targets,
                              "yocto_build",
                              deps,
                              variables=dict(common_variables,
-                                            target=self.conf["build_target"],
+                                            target=yh.get_mandatory_str_value(
+                                                self.conf, "build_target")[0],
                                             name=self.name))
 
         return targets
