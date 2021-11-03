@@ -107,14 +107,11 @@ class Writer(object):
             all_inputs.append('||')
             all_inputs.extend(order_only)
         if implicit_outputs:
-            implicit_outputs = [
-                escape_path(x) for x in as_list(implicit_outputs)
-            ]
+            implicit_outputs = [escape_path(x) for x in as_list(implicit_outputs)]
             out_outputs.append('|')
             out_outputs.extend(implicit_outputs)
 
-        self._line('build %s: %s' %
-                   (' '.join(out_outputs), ' '.join([rule] + all_inputs)))
+        self._line('build %s: %s' % (' '.join(out_outputs), ' '.join([rule] + all_inputs)))
         if pool is not None:
             self._line('  pool = %s' % pool)
         if dyndep is not None:
@@ -161,9 +158,7 @@ class Writer(object):
             space = available_space
             while True:
                 space = text.rfind(' ', 0, space)
-                if (space < 0
-                        or self._count_dollars_before_index(text, space) % 2
-                        == 0):
+                if (space < 0 or self._count_dollars_before_index(text, space) % 2 == 0):
                     break
 
             if space < 0:
@@ -171,9 +166,7 @@ class Writer(object):
                 space = available_space - 1
                 while True:
                     space = text.find(' ', space + 1)
-                    if (space < 0
-                            or self._count_dollars_before_index(text, space) %
-                            2 == 0):
+                    if (space < 0 or self._count_dollars_before_index(text, space) % 2 == 0):
                         break
             if space < 0:
                 # Give up on breaking.
