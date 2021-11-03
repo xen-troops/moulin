@@ -4,24 +4,26 @@
 
 import shlex
 import os.path
+from typing import cast
+from yaml.nodes import MappingNode
 from moulin.utils import create_stamp_name
+from moulin import yaml_helpers as yh
+from moulin import ninja_syntax
 
 
-def get_fetcher(conf, build_dir, generator):
+def get_fetcher(conf: MappingNode, build_dir: str, generator: ninja_syntax.Writer):
     """Construct and return RepoFetcher object"""
     return RepoFetcher(conf, build_dir, generator)
 
 
-def gen_build_rules(generator):
+def gen_build_rules(generator: ninja_syntax.Writer):
     """Generate build rules using Ninja generator"""
     cmd = " && ".join([
         "mkdir -p $repo_dir",
         "cd $repo_dir",
         "repo init -u $url $repo_args",
     ])
-    generator.rule("repo_init",
-                   command=cmd,
-                   description="Initialize repo directory")
+    generator.rule("repo_init", command=cmd, description="Initialize repo directory")
     generator.newline()
 
     generator.rule("repo_sync",
@@ -35,25 +37,29 @@ class RepoFetcher:
     Repo fetcher class. Provides methods to generate rules for
     fetching repo-based repositories
     """
-    def __init__(self, conf, build_dir, generator):
+    def __init__(self, conf: MappingNode, build_dir: str, generator: ninja_syntax.Writer):
         self.conf = conf
         self.build_dir = build_dir
         self.generator = generator
-        self.url = conf["url"]
-        self.repo_dir = os.path.join(build_dir, conf.get("dir", "."))
+        self.url = cast(str, yh.get_mandatory_str_value(conf, "url")[0])
+        dirname = cast(str, yh.get_str_value(conf, "dir", default=".")[0])
+        self.repo_dir = os.path.join(build_dir, dirname)
 
     def gen_fetch(self):
         """Generate instructions to fetch repo-based repository"""
         repo_args = []
-        conf = self.conf
-        if "manifest" in conf:
-            repo_args.append(f"-m {shlex.quote(conf['manifest'])}")
-        if "rev" in conf:
-            repo_args.append(f"-b {shlex.quote(conf['rev'])}")
-        if "depth" in conf:
-            repo_args.append(f"--depth={conf['depth']}")
-        if "groups" in conf:
-            repo_args.append(f"-g {conf['groups']}")
+        manifest = yh.get_str_value(self.conf, "manifest")[0]
+        if manifest:
+            repo_args.append(f"-m {shlex.quote(manifest)}")
+        rev = yh.get_str_value(self.conf, "rev")[0]
+        if rev:
+            repo_args.append(f"-b {shlex.quote(rev)}")
+        depth = yh.get_int_value(self.conf, "depth")[0]
+        if depth:
+            repo_args.append(f"--depth={depth}")
+        groups = yh.get_str_value(self.conf, "groups")[0]
+        if groups:
+            repo_args.append(f"-g {groups}")
 
         init_target = os.path.join(self.repo_dir, ".repo")
         sync_stamp = create_stamp_name(self.build_dir, self.url, "sync")

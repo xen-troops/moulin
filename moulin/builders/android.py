@@ -5,16 +5,21 @@ Android open source project (AOSP) builder module
 """
 
 import os.path
+from typing import List
+from yaml.nodes import MappingNode
+from moulin import yaml_helpers as yh
+from moulin import ninja_syntax
 
 
-def get_builder(conf, name, build_dir, src_stamps, generator):
+def get_builder(conf: MappingNode, name: str, build_dir: str, src_stamps: List[str],
+                generator: ninja_syntax.Writer):
     """
     Return configured AndroidBuilder class
     """
     return AndroidBuilder(conf, name, build_dir, src_stamps, generator)
 
 
-def gen_build_rules(generator):
+def gen_build_rules(generator: ninja_syntax.Writer):
     """
     Generate yocto build rules for ninja
     """
@@ -36,7 +41,8 @@ class AndroidBuilder:
     """
     AndroidBuilder class generates Ninja rules for given Android build configuration
     """
-    def __init__(self, conf, name, build_dir, src_stamps, generator):
+    def __init__(self, conf: MappingNode, name: str, build_dir: str, src_stamps: List[str],
+                 generator: ninja_syntax.Writer):
         self.conf = conf
         self.name = name
         self.generator = generator
@@ -45,20 +51,22 @@ class AndroidBuilder:
 
     def gen_build(self):
         """Generate ninja rules to build AOSP"""
-
-        env = " ".join(self.conf.get("env", []))
+        env_node = yh.get_sequence_node(self.conf, "env")
+        if env_node:
+            env_values = [x.value for x in env_node.value]
+        else:
+            env_values = []
+        env = " ".join(env_values)
         variables = {
             "build_dir": self.build_dir,
             "env": env,
-            "lunch_target": self.conf["lunch_target"]
+            "lunch_target": yh.get_mandatory_str_value(self.conf, "lunch_target")[0]
         }
         targets = [
-            os.path.join(self.build_dir, t) for t in self.conf["target_images"]
+            os.path.join(self.build_dir, t.value)
+            for t in yh.get_mandatory_sequence(self.conf, "target_images")
         ]
-        self.generator.build(targets,
-                             "android_build",
-                             self.src_stamps,
-                             variables=variables)
+        self.generator.build(targets, "android_build", self.src_stamps, variables=variables)
         self.generator.newline()
 
         return targets

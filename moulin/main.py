@@ -103,8 +103,7 @@ def moulin_entry():
         f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}')
     log.info("Generating build.ninja")
 
-    document = conf.get_document()
-    build_generator.generate_build(document, args.conf)
+    build_generator.generate_build(conf, args.conf)
 
 
 def rouge_entry():
