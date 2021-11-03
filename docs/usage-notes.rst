@@ -14,6 +14,14 @@ self-explanatory targets:
 * :code:`conf-domu`
 * :code:`domu`
 
+Rouge-specific targets
+----------------------
+
+If section :code:`images:` is present in YAML file, :code:`moulin`
+will also generate handy :code:`image-{image_name}` rules. They can be
+used to invoke :code:`rouge` with the same build options, as
+:code:`moulin` was invoked.
+
 Build inside yocto
 ------------------
 

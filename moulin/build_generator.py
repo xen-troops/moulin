@@ -10,6 +10,7 @@ import sys
 
 from importlib import import_module
 from moulin import ninja_syntax
+from moulin import rouge
 from moulin import yaml_helpers as yh
 from moulin.build_conf import MoulinConfiguration
 
@@ -25,6 +26,8 @@ def generate_build(conf: MoulinConfiguration,
     generator = ninja_syntax.Writer(open(ninja_build_fname, 'w'), width=120)
 
     _gen_regenerate(conf_file_name, generator)
+
+    rouge.gen_build_rules(generator)
 
     _flatten_sources(conf)
     # We want to have all Ninja build rules before all actual build
@@ -61,6 +64,7 @@ def generate_build(conf: MoulinConfiguration,
         if yh.get_boolean_value(component, "default")[0]:
             generator.default(comp_name)
 
+    rouge.gen_build(generator, rouge.get_available_images(conf.get_root_node()))
 
 
 def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
