@@ -149,7 +149,7 @@ class Writer(object):
     def _line(self, text, indent=0):
         """Write 'text' word-wrapped at self.width characters."""
         leading_space = '  ' * indent
-        while len(leading_space) + len(text) > self.width:
+        while len(leading_space) + len(text) > self.width and len(text) < 4 * 1024 * 1024:
             # The text is too wide; wrap if possible.
 
             # Find the rightmost space that would obey our width constraint and
