@@ -7,6 +7,7 @@ and parameters applied) and produces Ninja build file
 
 import os.path
 import sys
+from typing import Optional, List
 
 from importlib import import_module
 from moulin import ninja_syntax
@@ -27,6 +28,7 @@ def generate_build(conf: MoulinConfiguration,
 
     _gen_regenerate(conf_file_name, generator)
 
+    _gen_fetcherdep_rules(generator)
     rouge.gen_build_rules(generator)
 
     _flatten_sources(conf)
@@ -64,6 +66,9 @@ def generate_build(conf: MoulinConfiguration,
         if yh.get_boolean_value(component, "default")[0]:
             generator.default(comp_name)
 
+        generator.build(f".moulin_{comp_name}_dyndep",
+                        "fetcherdep",
+                        variables=dict(component=comp_name))
     rouge.gen_build(generator, rouge.get_available_images(conf.get_root_node()))
 
 
@@ -98,6 +103,15 @@ def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
     generator.rule("regenerate", command=f"{this_script} {args}", generator=1)
     generator.newline()
     generator.build(BUILD_FILENAME, "regenerate", [this_script, conf_file_name])
+    generator.newline()
+
+
+def _gen_fetcherdep_rules(generator: ninja_syntax.Writer):
+    this_script = os.path.abspath(sys.argv[0])
+    args = " ".join(sys.argv[1:])
+    generator.rule("fetcherdep",
+                   command=f"{this_script} {args} --fetcherdep $component",
+                   description="Generate dyndeps for '$component'")
     generator.newline()
 
 
