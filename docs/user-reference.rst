@@ -40,6 +40,16 @@ because you can see what exactly is passed to fetchers and builders.
 
 .. _moulin_yaml_sections:
 
+Internal command line options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There is :code:`--fetcherdep` command line option which is internal,
+and it is even hidden from :code:`-h` output. It is used by `moulin` to
+generate dynamic dependency files for Ninja, so Ninja can track changes
+inside components.
+
+This option is not meant to be used by a user.
+
 YAML sections
 -------------
 
