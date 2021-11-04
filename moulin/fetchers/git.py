@@ -3,7 +3,7 @@
 """Git fetcher module"""
 
 import os.path
-from typing import cast
+from typing import List, cast
 import pygit2
 from yaml.nodes import MappingNode
 from yaml.representer import SafeRepresenter
@@ -79,6 +79,13 @@ class GitFetcher:
                              })
         self.generator.newline()
         return checkout_stamp
+
+    def get_file_list(self) -> List[str]:
+        "Get list of files under git control"
+        repo = pygit2.Repository(self.git_dir)
+        index = repo.index
+        index.read()
+        return [os.path.join(self.git_dir, entry.path) for entry in index]
 
     def capture_state(self):
         """
