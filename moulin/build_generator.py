@@ -67,6 +67,31 @@ def generate_build(conf: MoulinConfiguration,
     rouge.gen_build(generator, rouge.get_available_images(conf.get_root_node()))
 
 
+def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
+    _flatten_sources(conf)
+    generator = ninja_syntax.Writer(open(f".moulin_{component}_dyndep", 'w'), width=120)
+    generator.variable("ninja_dyndep_version", 1)
+    generator.newline()
+
+    builder_modules, fetcher_modules = _get_modules(conf, None)
+    components_node = yh.get_mandatory_mapping_node(conf.get_root_node(), "components")
+    component_node = yh.get_mandatory_mapping_node(components_node, component)
+    build_dir = yh.get_str_value(component_node, "build-dir", default=component)[0]
+    builder_node = yh.get_mandatory_mapping_node(component_node, "builder")
+    builder_type = yh.get_mandatory_str_value(builder_node, "type")[0]
+    builder_module = builder_modules[builder_type]
+    builder = builder_module.get_builder(builder_node, component, build_dir, [], generator)
+
+    deps: List[str] = []
+    targets = builder.get_targets()
+    for source in yh.get_mandatory_sequence(component_node, "sources"):
+        source_type = yh.get_mandatory_str_value(source, "type")[0]
+        fetcher_module = fetcher_modules[source_type]
+        fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
+        deps.extend(fetcher.get_file_list())
+    generator.build(targets[0], "dyndep", implicit=deps)
+
+
 def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
     this_script = os.path.abspath(sys.argv[0])
     args = " ".join(sys.argv[1:])
@@ -81,7 +106,7 @@ def _flatten_sources(conf: MoulinConfiguration):
         yh.flatten_list(yh.get_mandatory_sequence_node(component, "sources"))
 
 
-def _get_modules(conf: MoulinConfiguration, generator: ninja_syntax.Writer):
+def _get_modules(conf: MoulinConfiguration, generator: Optional[ninja_syntax.Writer]):
     builder_modules = {}
     fetcher_modules = {}
     for _, component in yh.get_mandatory_mapping(conf.get_root_node(), "components"):
@@ -98,11 +123,13 @@ def _get_modules(conf: MoulinConfiguration, generator: ninja_syntax.Writer):
 
 def _prepare_builder(builder, generator):
     module = import_module(f".builders.{builder}", __package__)
-    module.gen_build_rules(generator)
+    if generator:
+        module.gen_build_rules(generator)
     return module
 
 
 def _prepare_fetcher(fetcher, generator):
     module = import_module(f".fetchers.{fetcher}", __package__)
-    module.gen_build_rules(generator)
+    if generator:
+        module.gen_build_rules(generator)
     return module

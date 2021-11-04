@@ -99,11 +99,19 @@ def _handle_shared_opts(description: str,
 def moulin_entry():
     """Console entry point for moulin"""
 
+    additional_opts = [
+        (["--fetcherdep"], dict(nargs=1, metavar="component", help=argparse.SUPPRESS)),
+    ]
     conf, args = _handle_shared_opts(
-        f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}')
+        f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}',
+        additional_opts=additional_opts)
     log.info("Generating build.ninja")
 
-    build_generator.generate_build(conf, args.conf)
+    if not args.fetcherdep:
+        build_generator.generate_build(conf, args.conf)
+    else:
+        log.info("Generating deps for component '%s'", args.fetcherdep[0])
+        build_generator.generate_fetcher_dyndep(conf, args.fetcherdep[0])
 
 
 def rouge_entry():
