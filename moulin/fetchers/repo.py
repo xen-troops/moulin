@@ -4,7 +4,9 @@
 
 import shlex
 import os.path
-from typing import cast
+import subprocess
+import pygit2
+from typing import List, cast
 from yaml.nodes import MappingNode
 from moulin.utils import create_stamp_name
 from moulin import yaml_helpers as yh
@@ -80,6 +82,32 @@ class RepoFetcher:
         self.generator.newline()
 
         return sync_stamp
+
+    def get_file_list(self) -> List[str]:
+        "Get list of files under repo control"
+
+        # First, get list of projects
+        repo_out = subprocess.run(["repo", "list"],
+                                  check=True,
+                                  cwd=self.repo_dir,
+                                  stdout=subprocess.PIPE,
+                                  encoding="utf-8")
+        projects = [x.split(":")[0].strip() for x in repo_out.stdout.split("\n")]
+
+        # Then interrogate each git repo
+        result: List[str] = []
+        for project in projects:
+            if len(project) == 0:
+                continue
+            git_dir = os.path.join(self.repo_dir, project)
+            repo = pygit2.Repository(git_dir)
+            index = repo.index
+            index.read()
+            for entry in index:
+                path = os.path.join(git_dir, entry.path)
+                if os.path.isfile(path):
+                    result.append(path.replace("$", "$$"))
+        return result
 
     def capture_state(self):
         """
