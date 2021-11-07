@@ -68,6 +68,7 @@ def generate_build(conf: MoulinConfiguration,
 
         generator.build(f".moulin_{comp_name}_dyndep",
                         "fetcherdep",
+                        inputs=source_stamps,
                         variables=dict(component=comp_name))
     rouge.gen_build(generator, rouge.get_available_images(conf.get_root_node()))
 
