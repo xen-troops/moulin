@@ -143,7 +143,7 @@ def rouge_entry():
     conf, args = _handle_shared_opts(
         f'Rouge boot image generator v{Version(importlib_metadata.version("moulin"))}',
         additional_opts, exclusive_opts)
-    root = conf.get_root_node()
+    root = conf.get_root()
     images = moulin.rouge.get_available_images(root)
 
     if not images:

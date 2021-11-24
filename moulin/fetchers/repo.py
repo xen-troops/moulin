@@ -5,15 +5,14 @@
 import shlex
 import os.path
 import subprocess
+from typing import List
 import pygit2
-from typing import List, cast
-from yaml.nodes import MappingNode
 from moulin.utils import create_stamp_name
-from moulin import yaml_helpers as yh
+from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
 
 
-def get_fetcher(conf: MappingNode, build_dir: str, generator: ninja_syntax.Writer):
+def get_fetcher(conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer):
     """Construct and return RepoFetcher object"""
     return RepoFetcher(conf, build_dir, generator)
 
@@ -39,27 +38,27 @@ class RepoFetcher:
     Repo fetcher class. Provides methods to generate rules for
     fetching repo-based repositories
     """
-    def __init__(self, conf: MappingNode, build_dir: str, generator: ninja_syntax.Writer):
+    def __init__(self, conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer):
         self.conf = conf
         self.build_dir = build_dir
         self.generator = generator
-        self.url = cast(str, yh.get_mandatory_str_value(conf, "url")[0])
-        dirname = cast(str, yh.get_str_value(conf, "dir", default=".")[0])
+        self.url = conf["url"].as_str
+        dirname = conf.get("dir", default=".").as_str
         self.repo_dir = os.path.join(build_dir, dirname)
 
     def gen_fetch(self):
         """Generate instructions to fetch repo-based repository"""
         repo_args = []
-        manifest = yh.get_str_value(self.conf, "manifest")[0]
+        manifest = self.conf.get("manifest", "").as_str
         if manifest:
             repo_args.append(f"-m {shlex.quote(manifest)}")
-        rev = yh.get_str_value(self.conf, "rev")[0]
+        rev = self.conf.get("rev", "").as_str
         if rev:
             repo_args.append(f"-b {shlex.quote(rev)}")
-        depth = yh.get_int_value(self.conf, "depth")[0]
+        depth = self.conf.get("depth", "").as_int
         if depth:
             repo_args.append(f"--depth={depth}")
-        groups = yh.get_str_value(self.conf, "groups")[0]
+        groups = self.conf.get("groups", "").as_str
         if groups:
             repo_args.append(f"-g {groups}")
 
