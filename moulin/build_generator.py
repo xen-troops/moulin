@@ -38,15 +38,15 @@ def generate_build(conf: MoulinConfiguration,
     # to generate Ninja rules.
     builder_modules, fetcher_modules = _get_modules(conf, generator)
 
+    root = conf.get_root()
     # Now we have all plugins loaded and we can generate some build rules
-    for comp_name_node, component in yh.get_mandatory_mapping(conf.get_root_node(), "components"):
-        comp_name: str = comp_name_node.value
-        build_dir = yh.get_str_value(component, "build-dir", default=comp_name)[0]
-        builder_conf = yh.get_mandatory_mapping_node(component, "builder")
+    for comp_name, component in root["components"].items():
+        build_dir = component.get("build-dir", comp_name).as_str
+        builder_conf = component["builder"]
 
         source_stamps = []
-        for source in yh.get_mandatory_sequence(component, "sources"):
-            source_type = yh.get_mandatory_str_value(source, "type")[0]
+        for source in component["sources"]:
+            source_type = source["type"].as_str
             fetcher_module = fetcher_modules[source_type]
             fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
             source_stamps.append(fetcher.gen_fetch())
@@ -55,7 +55,7 @@ def generate_build(conf: MoulinConfiguration,
         generator.build(f"fetch-{comp_name}", "phony", source_stamps)
         generator.newline()
 
-        builder_type = yh.get_mandatory_str_value(builder_conf, "type")[0]
+        builder_type = builder_conf["type"].as_str
         builder_module = builder_modules[builder_type]
         builder = builder_module.get_builder(builder_conf, comp_name, build_dir, source_stamps,
                                              generator)
@@ -63,14 +63,14 @@ def generate_build(conf: MoulinConfiguration,
         build_stamps = builder.gen_build()
         generator.build(comp_name, "phony", build_stamps)
         generator.newline()
-        if yh.get_boolean_value(component, "default")[0]:
+        if component.get("default", False).as_bool:
             generator.default(comp_name)
 
         generator.build(f".moulin_{comp_name}_dyndep",
                         "fetcherdep",
                         inputs=source_stamps,
                         variables=dict(component=comp_name))
-    rouge.gen_build(generator, rouge.get_available_images(conf.get_root_node()))
+    rouge.gen_build(generator, rouge.get_available_images(conf.get_root()))
 
 
 def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
@@ -80,18 +80,17 @@ def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
     generator.newline()
 
     builder_modules, fetcher_modules = _get_modules(conf, None)
-    components_node = yh.get_mandatory_mapping_node(conf.get_root_node(), "components")
-    component_node = yh.get_mandatory_mapping_node(components_node, component)
-    build_dir = yh.get_str_value(component_node, "build-dir", default=component)[0]
-    builder_node = yh.get_mandatory_mapping_node(component_node, "builder")
-    builder_type = yh.get_mandatory_str_value(builder_node, "type")[0]
+    component_node = conf.get_root()["components"][component]
+    build_dir = component_node.get("build-dir", component).as_str
+    builder_node = component_node["builder"]
+    builder_type = builder_node["type"].as_str
     builder_module = builder_modules[builder_type]
     builder = builder_module.get_builder(builder_node, component, build_dir, [], generator)
 
     deps: List[str] = []
     targets = builder.get_targets()
-    for source in yh.get_mandatory_sequence(component_node, "sources"):
-        source_type = yh.get_mandatory_str_value(source, "type")[0]
+    for source in component_node["sources"]:
+        source_type = source["type"].as_str
         fetcher_module = fetcher_modules[source_type]
         fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
         deps.extend(fetcher.get_file_list())
@@ -124,13 +123,12 @@ def _flatten_sources(conf: MoulinConfiguration):
 def _get_modules(conf: MoulinConfiguration, generator: Optional[ninja_syntax.Writer]):
     builder_modules = {}
     fetcher_modules = {}
-    for _, component in yh.get_mandatory_mapping(conf.get_root_node(), "components"):
-        builder_node = yh.get_mandatory_mapping_node(component, "builder")
-        b_type = yh.get_mandatory_str_value(builder_node, "type")[0]
+    for _, component in conf.get_root()["components"].items():
+        b_type = component["builder"]["type"].as_str
         if b_type not in builder_modules:
             builder_modules[b_type] = _prepare_builder(b_type, generator)
-        for source in yh.get_mandatory_sequence(component, "sources"):
-            f_type = yh.get_mandatory_str_value(source, "type")[0]
+        for source in component["sources"]:
+            f_type = source["type"].as_str
             if f_type not in fetcher_modules:
                 fetcher_modules[f_type] = _prepare_fetcher(f_type, generator)
     return builder_modules, fetcher_modules

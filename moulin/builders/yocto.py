@@ -8,12 +8,12 @@ import os.path
 import shlex
 from typing import List, Tuple, cast
 from moulin.utils import create_stamp_name
-from yaml.nodes import MappingNode, SequenceNode
-from moulin import yaml_helpers as yh
 from moulin import ninja_syntax
+from moulin.yaml_wrapper import YamlValue
+from moulin.yaml_helpers import YAMLProcessingError
 
 
-def get_builder(conf: MappingNode, name: str, build_dir: str, src_stamps: List[str],
+def get_builder(conf: YamlValue, name: str, build_dir: str, src_stamps: List[str],
                 generator: ninja_syntax.Writer):
     """
     Return configured YoctoBuilder class
@@ -78,7 +78,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
                    restat=True)
 
 
-def _flatten_yocto_conf(conf: SequenceNode) -> List[Tuple[str, str]]:
+def _flatten_yocto_conf(conf: YamlValue) -> List[Tuple[str, str]]:
     """
     Flatten conf entries. While using YAML *entries syntax, we will get list of conf
     entries inside of other list. To overcome this, we need to move inner list 'up'
@@ -86,13 +86,13 @@ def _flatten_yocto_conf(conf: SequenceNode) -> List[Tuple[str, str]]:
 
     # Problem is conf entries that it is list itself
     result: List[Tuple[str, str]] = []
-    for entry in conf.value:
-        if not isinstance(entry, SequenceNode):
-            raise yh.YAMLProcessingError("Exptected array on 'conf' node", entry.start_mark)
-        if isinstance(entry.value[0], SequenceNode):
-            result.extend([(x.value[0].value, x.value[1].value) for x in entry.value])
+    for entry in conf:
+        if not entry.is_list:
+            raise YAMLProcessingError("Exptected array on 'conf' node", entry.mark)
+        if entry[0].is_list:
+            result.extend([(x[0].as_str, x[1].as_str) for x in entry])
         else:
-            result.append((entry.value[0].value, entry.value[1].value))
+            result.append((entry[0].as_str, entry[1].as_str))
     return result
 
 
@@ -100,7 +100,7 @@ class YoctoBuilder:
     """
     YoctoBuilder class generates Ninja rules for given build configuration
     """
-    def __init__(self, conf: MappingNode, name: str, build_dir: str, src_stamps: List[str],
+    def __init__(self, conf: YamlValue, name: str, build_dir: str, src_stamps: List[str],
                  generator: ninja_syntax.Writer):
         self.conf = conf
         self.name = name
@@ -113,21 +113,21 @@ class YoctoBuilder:
         # - work_dir is the build directory where we can find conf/local.conf, tmp and other
         #   directories. It is called "build" by default
         self.yocto_dir = build_dir
-        self.work_dir = cast(str, yh.get_str_value(conf, "work_dir", default="build")[0])
+        self.work_dir: str = conf.get("work_dir", "build").as_str
 
     def _get_external_src(self) -> List[Tuple[str, str]]:
-        external_src_node = yh.get_mapping_node(self.conf, "external_src")
+        external_src_node = self.conf.get("external_src", None)
         if not external_src_node:
             return []
 
         ret: List[Tuple[str, str]] = []
-        for key_node, val_node in external_src_node.value:
-            if isinstance(val_node, SequenceNode):
-                path = os.path.join(*[cast(str, x.value) for x in val_node.value])
+        for key, val_node in cast(YamlValue, external_src_node).items():
+            if val_node.is_list:
+                path = os.path.join(*[x.as_str for x in val_node])
             else:
-                path = val_node.value
+                path = val_node.as_str
             path = os.path.abspath(path)
-            ret.append((f"EXTERNALSRC_pn-{key_node.value}", path))
+            ret.append((f"EXTERNALSRC_pn-{key}", path))
 
         return ret
 
@@ -146,9 +146,9 @@ class YoctoBuilder:
                              variables=common_variables)
 
         # Then we need to add layers
-        layers_node = yh.get_sequence_node(self.conf, "layers")
+        layers_node = self.conf.get("layers", None)
         if layers_node:
-            layers = " ".join([x.value for x in layers_node.value])
+            layers = " ".join([x.as_str for x in layers_node])
         else:
             layers = ""
         layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
@@ -159,7 +159,7 @@ class YoctoBuilder:
 
         # Next - update local.conf
         local_conf_target = os.path.join(self.yocto_dir, self.work_dir, "conf", "moulin.conf")
-        local_conf_node = yh.get_sequence_node(self.conf, "conf")
+        local_conf_node = self.conf.get("conf", None)
         if local_conf_node:
             local_conf = _flatten_yocto_conf(local_conf_node)
         else:
@@ -184,9 +184,9 @@ class YoctoBuilder:
 
         # Next step - invoke bitbake. At last :)
         targets = self.get_targets()
-        additional_deps_node = yh.get_sequence_node(self.conf, "additional_deps")
+        additional_deps_node = self.conf.get("additional_deps", None)
         if additional_deps_node:
-            deps = [os.path.join(self.yocto_dir, d.value) for d in additional_deps_node.value]
+            deps = [os.path.join(self.yocto_dir, d.as_str) for d in additional_deps_node]
         else:
             deps = []
         deps.append(local_conf_target)
@@ -196,8 +196,7 @@ class YoctoBuilder:
                              "yocto_build",
                              deps,
                              variables=dict(common_variables,
-                                            target=yh.get_mandatory_str_value(
-                                                self.conf, "build_target")[0],
+                                            target=self.conf["build_target"].as_str,
                                             name=self.name),
                              dyndep=dyndep_file)
 
@@ -206,8 +205,8 @@ class YoctoBuilder:
     def get_targets(self):
         "Return list of targets that are generated by this build"
         return [
-            os.path.join(self.yocto_dir, self.work_dir, t.value)
-            for t in yh.get_mandatory_sequence(self.conf, "target_images")
+            os.path.join(self.yocto_dir, self.work_dir, t.as_str)
+            for t in self.conf["target_images"]
         ]
 
     def capture_state(self):

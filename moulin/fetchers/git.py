@@ -3,16 +3,14 @@
 """Git fetcher module"""
 
 import os.path
-from typing import List, cast
+from typing import List
 import pygit2
-from yaml.nodes import MappingNode
-from yaml.representer import SafeRepresenter
+from moulin.yaml_wrapper import YamlValue
 from moulin.utils import create_stamp_name
-from moulin import yaml_helpers as yh
 from moulin import ninja_syntax
 
 
-def get_fetcher(conf: MappingNode, build_dir: str, generator: ninja_syntax.Writer):
+def get_fetcher(conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer):
     """Construct and return GitFetcher object"""
     return GitFetcher(conf, build_dir, generator)
 
@@ -44,14 +42,14 @@ _SEEN_REPOS = []
 
 class GitFetcher:
     """Git fetcher class. Provides methods to generate rules for fetching git repositories"""
-    def __init__(self, conf: MappingNode, build_dir: str, generator: ninja_syntax.Writer):
+    def __init__(self, conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer):
         self.conf = conf
         self.build_dir = build_dir
         self.generator = generator
-        self.url = cast(str, yh.get_mandatory_str_value(conf, "url")[0])
-        dirname = cast(str, yh.get_str_value(conf, "dir", default=_guess_dirname(self.url))[0])
+        self.url = conf["url"].as_str
+        dirname = conf.get("dir", default=_guess_dirname(self.url)).as_str
         self.git_dir = os.path.join(build_dir, dirname)
-        self.git_rev = yh.get_str_value(conf, "rev", default="master")[0]
+        self.git_rev = conf.get("rev", default="master").as_str
 
     def gen_fetch(self):
         """Generate instruction to fetch git repo"""
@@ -94,10 +92,4 @@ class GitFetcher:
         """
         repo = pygit2.Repository(self.git_dir)
         head = repo.revparse_single("HEAD")
-        rev_node = yh.get_scalar_node(self.conf, "rev")
-        if rev_node:
-            rev_node.value = str(head)
-        else:
-            representer = SafeRepresenter()
-            self.conf.value.append(representer.represent_str("rev"),
-                                   representer.represent_str(str(head)))
+        self.conf["rev"] = str(head)

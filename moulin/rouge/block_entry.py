@@ -9,14 +9,13 @@ import struct
 import shutil
 import logging
 import itertools
-from typing import List, Tuple, NamedTuple
+from typing import List, Tuple, NamedTuple, cast
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
-from yaml.nodes import MappingNode, ScalarNode
 from yaml import Mark
 from moulin.rouge import sfdisk, ext_utils
-from moulin.yaml_helpers import get_scalar_node, get_str_value, get_mandatory_str_value, \
-    get_mapping_node, YAMLProcessingError
+from moulin.yaml_helpers import YAMLProcessingError
+from moulin.yaml_wrapper import YamlValue
 
 log = logging.getLogger(__name__)
 
@@ -46,18 +45,12 @@ class GPTPartition(NamedTuple):
 class GPT(BlockEntry):
     "Represents GUID Partition Table"
 
-    def __init__(self, node: MappingNode):
+    def __init__(self, node: YamlValue):
         self._partitions: List[GPTPartition] = []
         self._size: int = 0
 
-        partitions = get_mapping_node(node, "partitions")
-        if not partitions:
-            raise YAMLProcessingError("Can't find 'partitions' entry", node.start_mark)
-        for part_id, part in partitions.value:
-            label: str = part_id.value
-            if not isinstance(part, MappingNode):
-                raise YAMLProcessingError("Excepted mapping node", part.start_mark)
-
+        for part_id, part in node["partitions"].items():
+            label = part_id
             entry_obj, gpt_type = self._process_entry(part)
             self._partitions.append(GPTPartition(label, gpt_type, start=0, size=0, entry=entry_obj))
 
@@ -68,11 +61,11 @@ class GPT(BlockEntry):
         return self._size
 
     @staticmethod
-    def _process_entry(node: MappingNode):
+    def _process_entry(node: YamlValue):
         entry_obj = construct_entry(node)
-        gpt_type, _ = get_str_value(node, "gpt_type")
+        gpt_type = node.get("gpt_type", "").as_str
         if not gpt_type:
-            log.warning("No GPT type is provided %s, using default", node.start_mark)
+            log.warning("No GPT type is provided %s, using default", node.mark)
             gpt_type = "8DA63339-0007-60C0-C436-083AC8230908"
 
         return (entry_obj, gpt_type)
@@ -106,23 +99,23 @@ class GPT(BlockEntry):
 class RawImage(BlockEntry):
     "Represents raw image file which needs to be copied as is"
 
-    def __init__(self, node: MappingNode):
+    def __init__(self, node: YamlValue):
         self._node = node
-        self._fname = get_mandatory_str_value(self._node, "image_path")[0]
+        self._fname = self._node["image_path"].as_str
         self._size = 0
 
     def _complete_init(self):
-        mark = get_mandatory_str_value(self._node, "image_path")[1]
+        mark = self._node["image_path"].mark
         if not os.path.exists(self._fname):
             raise YAMLProcessingError(f"Can't find file '{self._fname}'", mark)
         fsize = os.path.getsize(self._fname)
-        size_node = get_scalar_node(self._node, "size")
+        size_node = self._node.get("size", None)
         if size_node:
             self._size = _parse_size(size_node)
             if fsize > self._size:
                 raise YAMLProcessingError(
                     f"File '{self._fname}' is bigger than partition entry ({self._size})",
-                    size_node.start_mark)
+                    size_node.mark)
         else:
             self._size = fsize
 
@@ -145,9 +138,9 @@ class RawImage(BlockEntry):
 class AndroidSparse(BlockEntry):
     "Represents android sparse image file"
 
-    def __init__(self, node: MappingNode):
+    def __init__(self, node: YamlValue):
         self._node = node
-        self._fname = get_mandatory_str_value(self._node, "image_path")[0]
+        self._fname = self._node["image_path"].as_str
         self._size = 0
 
     def _read_size(self, mark: Mark):
@@ -167,17 +160,17 @@ class AndroidSparse(BlockEntry):
             return header[5] * header[6]
 
     def _complete_init(self):
-        mark = get_mandatory_str_value(self._node, "image_path")[1]
+        mark = self._node["image_path"].mark
         if not os.path.exists(self._fname):
             raise YAMLProcessingError(f"Can't find file '{self._fname}'", mark)
         fsize = self._read_size(mark)
-        size_node = get_scalar_node(self._node, "size")
+        size_node = self._node.get("size", None)
         if size_node:
             self._size = _parse_size(size_node)
             if fsize > self._size:
                 raise YAMLProcessingError(
                     f"Un-sparesd file '{self._fname}' is bigger than partition entry",
-                    size_node.start_mark)
+                    size_node.mark)
         else:
             self._size = fsize
 
@@ -202,13 +195,8 @@ class AndroidSparse(BlockEntry):
 class EmptyEntry(BlockEntry):
     "Represents empty partition"
 
-    def __init__(self, node: MappingNode):
-
-        size_node = get_scalar_node(node, "size")
-        if size_node:
-            self._size = _parse_size(size_node)
-        else:
-            raise YAMLProcessingError("size is mandatory for 'empty' entry", node.start_mark)
+    def __init__(self, node: YamlValue):
+        self._size = _parse_size(node["size"])
 
     def size(self) -> int:
         "Returns size in bytes"
@@ -218,36 +206,30 @@ class EmptyEntry(BlockEntry):
 class Ext4(BlockEntry):
     "Represents ext4 fs with list of files"
 
-    def __init__(self, node: MappingNode):
+    def __init__(self, node: YamlValue):
         self._node = node
         self._size = 0
         self._files: List[Tuple[str, str, Mark]] = []
-        files_node = get_mapping_node(self._node, "files")
+        files_node = self._node.get("files", None)
         if files_node:
-            remote_node: ScalarNode
-            local_node: ScalarNode
-            for remote_node, local_node in files_node.value:
-                if not isinstance(remote_node, ScalarNode) or not isinstance(
-                        local_node, ScalarNode):
-                    raise YAMLProcessingError("Expected mapping 'remote':'local'",
-                                              remote_node.start_mark)
-                remote_name = remote_node.value
-                local_name = local_node.value
-                self._files.append((remote_name, local_name, local_node.start_mark))
+            for remote_node, local_node in cast(YamlValue, files_node).items():
+                remote_name = remote_node
+                local_name = local_node.as_str
+                self._files.append((remote_name, local_name, local_node.mark))
 
     def _complete_init(self):
-        for _, local_name, local_node in self._files:
+        for _, local_name, local_mark in self._files:
             if not os.path.isfile(local_name):
-                raise YAMLProcessingError(f"Can't find file '{local_name}'", local_node.start_mark)
+                raise YAMLProcessingError(f"Can't find file '{local_name}'", local_mark)
 
         files_size = sum([os.path.getsize(x[1]) for x in self._files]) + 8 * 1024 * 1024
-        size_node = get_scalar_node(self._node, "size")
+        size_node = self._node.get("size", None)
         if size_node:
             self._size = _parse_size(size_node)
             if files_size > self._size:
                 raise YAMLProcessingError(
                     f"Computed size is {files_size}, it is bigger than partition size {self._size}",
-                    size_node.start_mark)
+                    size_node.mark)
         else:
             self._size = files_size
 
@@ -281,13 +263,13 @@ _ENTRY_TYPES = {
 }
 
 
-def construct_entry(node: MappingNode) -> BlockEntry:
+def construct_entry(node: YamlValue) -> BlockEntry:
     "Construct BlockEntry object from YAML node"
-    entry_type, mark = get_mandatory_str_value(node, "type")
-    if entry_type not in _ENTRY_TYPES:
-        raise YAMLProcessingError(f"Unknown type '{entry_type}'", mark)
+    entry_type = node["type"]
+    if entry_type.as_str not in _ENTRY_TYPES:
+        raise YAMLProcessingError(f"Unknown type '{entry_type.as_str}'", entry_type.mark)
 
-    return _ENTRY_TYPES[entry_type](node)
+    return _ENTRY_TYPES[entry_type.as_str](node)
 
 
 _SUFFIXES = {
@@ -303,14 +285,14 @@ _SUFFIXES = {
 }
 
 
-def _parse_size(node: ScalarNode) -> int:
-    components = node.value.split(" ")
+def _parse_size(node: YamlValue) -> int:
+    components = node.as_str.split(" ")
     if len(components) == 1:
         return int(components[0])
     if len(components) == 2:
         suffix = components[1]
         if suffix not in _SUFFIXES:
-            raise YAMLProcessingError(f"Unknown size suffix '{suffix}'", node.start_mark)
+            raise YAMLProcessingError(f"Unknown size suffix '{suffix}'", node.mark)
         scaler = _SUFFIXES[suffix]
         return int(components[0]) * scaler
-    raise YAMLProcessingError(f"Can't parse size entry '{node.value}'", node.start_mark)
+    raise YAMLProcessingError(f"Can't parse size entry '{node.as_str}'", node.mark)
