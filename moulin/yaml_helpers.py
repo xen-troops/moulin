@@ -60,14 +60,6 @@ def get_sequence_node(node: MappingNode, name: str) -> Optional[SequenceNode]:
     return value
 
 
-def get_mandatory_scalar_node(node: MappingNode, name: str) -> ScalarNode:
-    "Return mandatory scalar node with given name from mapping"
-    ret = get_scalar_node(node, name)
-    if not ret:
-        raise YAMLProcessingError(f"Key '{name} is mandatory'", node.start_mark)
-    return ret
-
-
 def get_mandatory_mapping_node(node: MappingNode, name: str) -> MappingNode:
     "Return mandatory mapping node with given name from mapping"
     ret = get_mapping_node(node, name)
@@ -136,33 +128,11 @@ def get_str_value(mapping_node: MappingNode,
     return get_typed_value(mapping_node, name, str, default)
 
 
-def get_int_value(mapping_node: MappingNode,
-                  name: str,
-                  default: Optional[int] = None) -> Tuple[Optional[int], Optional[Mark]]:
-    "Return scalar node with given name from mapping as integer value"
-    return get_typed_value(mapping_node, name, int, default)
-
-
-def get_mandatory_boolean_value(mapping_node: MappingNode, name: str) -> Tuple[bool, Mark]:
-    "Return scalar node with given name from mapping as a boolean value"
-    return get_mandatory_typed_value(mapping_node, name, bool)
-
-
 def get_mandatory_str_value(mapping_node: MappingNode, name: str) -> Tuple[str, Mark]:
     "Return scalar node with given name from mapping as a string value"
     return get_mandatory_typed_value(mapping_node, name, str)
 
 
-def get_mandatory_int_value(mapping_node: MappingNode, name: str) -> Tuple[int, Mark]:
-    "Return scalar node with given name from mapping as integer value"
-    return get_mandatory_typed_value(mapping_node, name, int)
-
-
 def get_mandatory_mapping(node: MappingNode, name: str) -> List[Tuple[Node, Any]]:
     "Return mandatory sequence node with given name from mapping"
     return get_mandatory_mapping_node(node, name).value
-
-
-def get_mandatory_sequence(node: MappingNode, name: str) -> List[Any]:
-    "Return mandatory sequence node with given name from mapping"
-    return get_mandatory_sequence_node(node, name).value
