@@ -13,6 +13,8 @@ from yaml.nodes import MappingNode, ScalarNode, SequenceNode, Node
 from moulin.yaml_helpers import get_boolean_value, get_str_value, get_mandatory_str_value, \
     get_mapping_node, YAMLProcessingError
 
+from moulin.yaml_wrapper import YamlValue
+
 log = logging.getLogger(__name__)
 
 
@@ -203,6 +205,10 @@ class MoulinConfiguration:
     def get_root_node(self):
         "Return root YAML node"
         return self._node
+
+    def get_root(self) -> YamlValue:
+        "Return root as YamlValue object"
+        return YamlValue(self._node)
 
 
 #
