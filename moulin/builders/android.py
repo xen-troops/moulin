@@ -6,7 +6,6 @@ Android open source project (AOSP) builder module
 
 import os.path
 from typing import List
-from moulin.utils import construct_fetcher_dep_cmd
 from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
 
@@ -24,7 +23,6 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     Generate yocto build rules for ninja
     """
     cmd = " && ".join([
-        construct_fetcher_dep_cmd(),
         "export $env",
         "cd $build_dir",
         "source build/envsetup.sh",
@@ -35,8 +33,6 @@ def gen_build_rules(generator: ninja_syntax.Writer):
                    command=f'bash -c "{cmd}"',
                    description="Invoke Android build system",
                    pool="console",
-                   deps="gcc",
-                   depfile=".moulin_$name.d",
                    restat=True)
     generator.newline()
 
