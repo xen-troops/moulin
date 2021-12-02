@@ -32,7 +32,8 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     ])
     generator.rule("yocto_init_env",
                    command=f'bash -c "{cmd}"',
-                   description="Initialize Yocto build environment")
+                   description="Initialize Yocto build environment",
+                   restat=True)
     generator.newline()
 
     # Add bitbake layers by calling bitbake-layers script
