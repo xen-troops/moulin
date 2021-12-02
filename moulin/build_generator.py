@@ -11,6 +11,7 @@ from typing import Optional, List
 
 from importlib import import_module
 from moulin import ninja_syntax
+from moulin import make_syntax
 from moulin import rouge
 from moulin import yaml_helpers as yh
 from moulin.build_conf import MoulinConfiguration
@@ -28,7 +29,6 @@ def generate_build(conf: MoulinConfiguration,
 
     _gen_regenerate(conf_file_name, generator)
 
-    _gen_fetcherdep_rules(generator)
     rouge.gen_build_rules(generator)
 
     _flatten_sources(conf)
@@ -66,18 +66,12 @@ def generate_build(conf: MoulinConfiguration,
         if component.get("default", False).as_bool:
             generator.default(comp_name)
 
-        generator.build(f".moulin_{comp_name}_dyndep",
-                        "fetcherdep",
-                        inputs=source_stamps,
-                        variables=dict(component=comp_name))
     rouge.gen_build(generator, rouge.get_available_images(conf.get_root()))
 
 
 def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
     _flatten_sources(conf)
-    generator = ninja_syntax.Writer(open(f".moulin_{component}_dyndep", 'w'), width=120)
-    generator.variable("ninja_dyndep_version", 1)
-    generator.newline()
+    generator = make_syntax.Writer(open(f".moulin_{component}.d", 'w'), width=120)
 
     builder_modules, fetcher_modules = _get_modules(conf, None)
     component_node = conf.get_root()["components"][component]
@@ -94,7 +88,7 @@ def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
         fetcher_module = fetcher_modules[source_type]
         fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
         deps.extend(fetcher.get_file_list())
-    generator.build(targets[0], "dyndep", implicit=deps)
+    generator.simple_dep(targets, deps)
 
 
 def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
@@ -103,15 +97,6 @@ def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
     generator.rule("regenerate", command=f"{this_script} {args}", generator=1)
     generator.newline()
     generator.build(BUILD_FILENAME, "regenerate", [this_script, conf_file_name])
-    generator.newline()
-
-
-def _gen_fetcherdep_rules(generator: ninja_syntax.Writer):
-    this_script = os.path.abspath(sys.argv[0])
-    args = " ".join(sys.argv[1:])
-    generator.rule("fetcherdep",
-                   command=f"{this_script} {args} --fetcherdep $component",
-                   description="Generate dyndeps for '$component'")
     generator.newline()
 
 
