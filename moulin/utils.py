@@ -3,6 +3,7 @@
 """Module hosting different utility functions"""
 
 import os.path
+import sys
 
 
 def create_stamp_name(*args):
@@ -10,3 +11,10 @@ def create_stamp_name(*args):
     stamp = "-".join(args)
     path = os.path.join(".stamps", stamp.replace("-", "--").replace(os.sep, "-").replace(":", "-"))
     return os.path.abspath(path)
+
+
+def construct_fetcher_dep_cmd() -> str:
+    "Generate command line to generate fetcher dependency file"
+    this_script = os.path.abspath(sys.argv[0])
+    args = " ".join(sys.argv[1:])
+    return f"{this_script} {args} --fetcherdep $name"
