@@ -181,9 +181,9 @@ class MoulinConfiguration:
         "Complete object initialization with given options"
         if options:
             log.info("Completing setup with following parameters:")
-        for param_name, param_value in options.items():
-            log.info("  %s: %s", param_name, param_value)
-            self._params[param_name].apply_overrides(self._node, param_value)
+            for param_name, param_value in options.items():
+                log.info("  %s: %s", param_name, param_value)
+                self._params[param_name].apply_overrides(self._node, param_value)
 
         log.debug("Expanding variables...")
         self._prepare_variables()
