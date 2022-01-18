@@ -27,6 +27,7 @@ SETUP_ARGS: Dict[str, Any] = dict(
         'pygit2',
         'importlib_metadata',
         'packaging',
+        'pyaml',
     ],
     python_requires=">=3.6",
     entry_points={
