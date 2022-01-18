@@ -174,7 +174,7 @@ class MoulinConfiguration:
                 if isinstance(token, VariableRef):
                     if token.name == vname:
                         raise YAMLProcessingError(f"Variable {vname} refers to self",
-                                                  vname.start_mark)
+                                                  vname_node.start_mark)
         self._variables = _try_to_expand_variables(variables)
 
     def complete_init(self, options):
