@@ -411,3 +411,36 @@ Optional parameters:
 
 * :code:`env` - list of additional environment variables that should
   be exported before calling :code:`lunch`.
+
+android_kernel builder
+^^^^^^^^^^^^^^^^^^^^^^
+
+Android Kernel builder is used to build kernel and kernel modules for
+Android Open Source Project (AOSP). It expects that correct directory
+layout is present in build directory. In most cases AOSP is cloned
+using `repo` fetcher.
+
+.. code-block:: yaml
+
+  builder:
+    type: android_kernel # Should be 'android_kernel'
+    env:                 # Optional
+      - "TARGET_BOARD_PLATFORM=r8a7795"
+      - "BUILD_CONFIG=common/build.config.xenvm"
+      - "SKIP_MRPROPER=1"
+    target_images:
+      - "out/android12-5.4/common/arch/arm64/boot/Image"
+
+Mandatory options:
+
+* :code:`type` - Builder type. Should be :code:`android` for this type
+  of builder.
+
+* :code:`target_images` - list of image files that should be generated
+  by this component as a result of invoking :code:`build.sh`
+  script. Every component should generate at least one image file.
+
+Optional parameters:
+
+* :code:`env` - list of additional environment variables that should
+  be exported before calling :code:`build.sh`.
