@@ -318,7 +318,7 @@ additional layers and :code:`bitbake` used to perform the build.
       - [MACHINE, "machine-name"]
       - [DISTRO_FEATURES_remove, "feature_to_remove"]
       - [DISTRO_FEATURES_append, "feature_to_add"]
-    layers:           # Mandatory
+    layers:           # Optional
       - "../poky/meta-yocto-bsp"
       - "../meta-other-layer/"
     external_src:     # Optional
