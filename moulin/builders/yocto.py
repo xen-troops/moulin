@@ -153,14 +153,12 @@ class YoctoBuilder:
         # Then we need to add layers
         layers_node = self.conf.get("layers", None)
         if layers_node:
+            layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
             layers = " ".join([x.as_str for x in layers_node])
-        else:
-            layers = ""
-        layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
-        self.generator.build(layers_stamp,
-                             "yocto_add_layers",
-                             env_target,
-                             variables=dict(common_variables, layers=layers))
+            self.generator.build(layers_stamp,
+                                 "yocto_add_layers",
+                                 env_target,
+                                 variables=dict(common_variables, layers=layers))
 
         # Next - update local.conf
         local_conf_target = os.path.join(self.yocto_dir, self.work_dir, "conf", "moulin.conf")
@@ -180,7 +178,7 @@ class YoctoBuilder:
 
         self.generator.build(local_conf_target,
                              "yocto_update_conf",
-                             layers_stamp,
+                             layers_stamp if layers_node else env_target,
                              variables=dict(common_variables, conf=" ".join(local_conf_lines)))
         self.generator.newline()
 
