@@ -46,6 +46,14 @@ Requirements and Installation
 `moulin` requires Python 3.6+ to run. You might need :code:`pip` or
 :code:`pip3` tool to install it.
 
+`moulin` generates `build.ninja` compatible with ninja 1.10+.
+This is because lower versions of ninja do not support multiple outputs.
+So if you run ninja and see error message like this ::
+
+  multiple outputs aren't (yet?) supported by depslog
+
+you need to get newer version from `<https://github.com/ninja-build/ninja/releases>`_.
+
 Also `moulin` requires :code:`pygit2`. If it is not installed on your
 system, :code:`pip` will try to install it from repository. It may
 fail in case if you are missing :code:`libgit2` development files or
