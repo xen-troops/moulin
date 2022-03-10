@@ -17,8 +17,15 @@ def get_fetcher(conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer)
 
 def gen_build_rules(generator: ninja_syntax.Writer):
     """Generate build rules using Ninja generator"""
+    # If $git_url uses ssh protocol and is not in .ssh/known_hosts,
+    # the ssh client starts to iterate with a user.
+    # But this interaction is not visible and
+    # looks just like the ninja hung on some operation.
+    # So we have to use ssh in BatchMode to throw
+    # an error instead of asking invisible questions.
     generator.rule("git_clone",
-                   command="git clone -q $git_url $git_dir && touch $out",
+                   command="GIT_SSH_COMMAND='ssh -o BatchMode=yes' "
+                           "git clone -q $git_url $git_dir && touch $out",
                    description="git clone")
     generator.newline()
 
