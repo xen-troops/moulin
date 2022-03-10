@@ -65,6 +65,11 @@ class AndroidBuilder:
         }
         targets = self.get_targets()
         deps = list(self.src_stamps)
+
+        additional_deps_node = self.conf.get("additional_deps", None)
+        if additional_deps_node:
+            deps.extend([os.path.join(self.build_dir, d.as_str) for d in additional_deps_node])
+
         self.generator.build(targets, "android_build", deps, variables=variables)
         self.generator.newline()
 
