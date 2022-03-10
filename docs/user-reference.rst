@@ -394,6 +394,8 @@ cases AOSP is cloned using `repo` fetcher.
     target_images:
       - "out/xenvm/userdebug/boot.img"
       - "out/xenvm/userdebug/system.img"
+    additional_deps:  # Optional
+      - "path/to/file/generated/by/other/component"
 
 Mandatory options:
 
@@ -444,3 +446,12 @@ Optional parameters:
 
 * :code:`env` - list of additional environment variables that should
   be exported before calling :code:`build.sh`.
+
+* :code:`additional_deps` - list of additional dependencies. This is
+  basically :code:`target_images` produced by other components. You
+  can use those to implement build dependencies between
+  components. For example, if your Android build needs Linux kernel
+  built by some other component, you might want to add path to linux
+  kernel image provided by this component into
+  :code:`additional_deps`. This will ensure that Linux kernel will be
+  built **before** Android.
