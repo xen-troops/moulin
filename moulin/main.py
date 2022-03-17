@@ -123,6 +123,7 @@ def rouge_entry():
         (["-f", "--force"], dict(action="store_true", help="Force overwrite output file")),
         (["-s", "--special"],
          dict(action="store_true", help="Allow writing to special files (like block devices)")),
+        (["-b", "--genbmap"], dict(action="store_true", help="Generate the bmap file for the image")),
         (["-o"],
          dict(nargs=1,
               metavar="FILE",
@@ -181,7 +182,7 @@ def rouge_entry():
     with open(output_file, "wb") as fileo:
         if not output_path.is_block_device():
             fileo.truncate(block_entry.size())
-        block_entry.write(fileo, 0)
+        block_entry.write(fileo, 0, args)
 
     end_time = time()
     log.info("Done in %s", timedelta(seconds=(end_time - start_time)))

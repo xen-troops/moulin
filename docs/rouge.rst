@@ -48,7 +48,7 @@ details. This document describes only argument specific to `rouge`.
 
 .. code-block::
 
-   rouge [-h] [--help-config] [-v] [--dump] [-l] [-f] [-s] [-o FILE]
+   rouge [-h] [--help-config] [-v] [--dump] [-l] [-f] [-s] [-b] [-o FILE]
 		[-l | -i image_name]
                 build.yaml image_name
 
@@ -76,6 +76,9 @@ details. This document describes only argument specific to `rouge`.
 
  - :code:`-o` - provides output file name. This is optional parameter,
    by default `rouge` will write to :code:`<image_name>.img`.
+
+ - :code:`-b`, :code:`--genbmap` - generate bmap file needed for
+   flashing with bmaptool
 
 
 Apart from this options, `rouge` will read and parse all YAML-file

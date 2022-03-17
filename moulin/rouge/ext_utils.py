@@ -65,3 +65,9 @@ def mkext4fs(file_out: BinaryIO, contents_dir=None):
         args.append(contents_dir)
 
     _run_cmd(args)
+
+
+def bmaptool(file: BinaryIO):
+    args = ["bmaptool", "create", "-o", file.name + ".bmap", file.name]
+
+    _run_cmd(args)

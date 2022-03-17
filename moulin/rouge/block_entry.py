@@ -25,7 +25,7 @@ class BlockEntry():
 
     # pylint: disable=too-few-public-methods
 
-    def write(self, _file, _offset):
+    def write(self, _file, _offset, args=None):
         "write() in base class does nothing"
 
     def get_deps(self) -> List[str]:  # pylint: disable=no-self-use
@@ -74,7 +74,7 @@ class GPT(BlockEntry):
         partitions = [x._replace(size=x.entry.size()) for x in self._partitions]
         self._partitions, self._size = sfdisk.fixup_partition_table(partitions)
 
-    def write(self, fp, offset):
+    def write(self, fp, offset, args=None):
         if not self._size:
             self._complete_init()
         if offset == 0:
@@ -89,6 +89,9 @@ class GPT(BlockEntry):
 
         for part in self._partitions:
             part.entry.write(fp, part.start + offset)
+
+        if args and args.genbmap:
+            ext_utils.bmaptool(fp)
 
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
