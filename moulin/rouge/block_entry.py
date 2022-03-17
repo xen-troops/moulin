@@ -209,8 +209,8 @@ class EmptyEntry(BlockEntry):
         return self._size
 
 
-class Ext4(BlockEntry):
-    "Represents ext4 fs with list of files"
+class FileSystem(BlockEntry):
+    "Represents a filesystem with list of files"
 
     def __init__(self, node: YamlValue):
         self._node = node
@@ -246,6 +246,16 @@ class Ext4(BlockEntry):
         return self._size
 
     def write(self, fp, offset):
+        raise NotImplementedError()
+
+    def get_deps(self) -> List[str]:
+        "Return list of dependencies needed to build this block"
+        return [f[1] for f in self._files]
+
+
+class Ext4(FileSystem):
+    "Represents ext4 fs with list of files"
+    def write(self, fp, offset):
         if not self._size:
             self._complete_init()
         with NamedTemporaryFile() as tempf, TemporaryDirectory() as tempd:
@@ -255,15 +265,25 @@ class Ext4(BlockEntry):
             ext_utils.mkext4fs(tempf, tempd)
             ext_utils.dd(tempf, fp, offset)
 
-    def get_deps(self) -> List[str]:
-        "Return list of dependencies needed to build this block"
-        return [f[1] for f in self._files]
+
+class Vfat(FileSystem):
+    "Represents vfat fs with list of files"
+    def write(self, fp, offset):
+        if not self._size:
+            self._complete_init()
+        with NamedTemporaryFile() as tempf:
+            tempf.truncate(self._size)
+            ext_utils.mkvfatfs(tempf)
+            for remote, local, _ in self._files:
+                ext_utils.mcopy(tempf, local, remote)
+            ext_utils.dd(tempf, fp, offset)
 
 
 _ENTRY_TYPES = {
     "gpt": GPT,
     "raw_image": RawImage,
     "ext4": Ext4,
+    "vfat": Vfat,
     "empty": EmptyEntry,
     "android_sparse": AndroidSparse,
 }

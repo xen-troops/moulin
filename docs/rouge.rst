@@ -34,7 +34,9 @@ should be installed separately. There is a list:
  - `dd` - used to copy raw images
  - `sfdisk` - creates GPT
  - `mkfs.ext4` - creates ext4 FS
+ - `mkfs.vfat` - creates vfat FS
  - `simg2img` - used to unpack Android sparse image files
+ - `mcopy` - populates vfat images with files
 
 
 Invoking `rouge`
@@ -238,16 +240,16 @@ read size, `rouge` will stop with an error. Thus, you can create block
 that is bigger than unpacked file, but not smaller.
 
 
-ext4 Image With Files
-^^^^^^^^^^^^^^^^^^^^^
+Filesystem Image With Files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This block types allows you to create new ext4 filesystem with some
+This block types allows you to create new filesystem with some
 files included from your disk. This is ideal for creating boot
 partitions, where you store kernel, initial ramdisk and so on.
 
 .. code-block:: yaml
 
-   type: ext4 # defines ext4 partition blocl
+   type: ext4 # defines ext4 partition block
    size: 30 MiB
    files:
      "remote_file1": "path/to/local/file1"
@@ -255,14 +257,17 @@ partitions, where you store kernel, initial ramdisk and so on.
      "remote_file3": "path/to/local/file3"
      "remote_file4": "path/to/local/file4"
 
+:code:`type` is required. Defines the filesystem type,
+currently `ext4` and `vfat` are supported.
+
 :code:`files:` section is optional. It defines :code:`remote:local`
 mapping of files that should be presented on newly created
 filesystem. :code:`remote` part is how the file will be named on new
 filesystem, while :code:`remote` is a path on your disk.
 
 :code:`size` is optional. `rouge` will calculate total file size and
-add some space for ext4fs metadata to determine block size. You can
-increase size, if wish.
+add some space for the filesystem metadata to determine block size.
+You can increase size, if wish.
 
 GUID Partition Table (GPT) block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

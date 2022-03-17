@@ -73,7 +73,21 @@ def bmaptool(file: BinaryIO):
     _run_cmd(args)
 
 
+def mkvfatfs(file_out: BinaryIO):
+    "Create ext4 fs in given file"
+    args = ["mkfs.vfat", file_out.name]
+
+    _run_cmd(args)
+
+
 def compress(file: BinaryIO):
     args = ["gzip", "-1kf", file.name]
+
+    _run_cmd(args)
+
+
+def mcopy(img: BinaryIO, file: str, name: str):
+    "Copy a file to a vfat image with a given name"
+    args = ["mcopy", "-i", img.name, file, "::" + name]
 
     _run_cmd(args)
