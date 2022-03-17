@@ -71,3 +71,9 @@ def bmaptool(file: BinaryIO):
     args = ["bmaptool", "create", "-o", file.name + ".bmap", file.name]
 
     _run_cmd(args)
+
+
+def compress(file: BinaryIO):
+    args = ["gzip", "-1kf", file.name]
+
+    _run_cmd(args)

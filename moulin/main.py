@@ -123,6 +123,7 @@ def rouge_entry():
         (["-f", "--force"], dict(action="store_true", help="Force overwrite output file")),
         (["-s", "--special"],
          dict(action="store_true", help="Allow writing to special files (like block devices)")),
+        (["-z", "--compress"], dict(action="store_true", help="Compress the resulting image")),
         (["-b", "--genbmap"], dict(action="store_true", help="Generate the bmap file for the image")),
         (["-o"],
          dict(nargs=1,
