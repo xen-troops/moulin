@@ -96,9 +96,6 @@ class GPT(BlockEntry):
         if args and args.genbmap:
             ext_utils.bmaptool(fp)
 
-        if args and args.compress:
-            ext_utils.compress(fp)
-
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
         return list(itertools.chain().from_iterable(

@@ -80,12 +80,6 @@ def mkvfatfs(file_out: BinaryIO):
     _run_cmd(args)
 
 
-def compress(file: BinaryIO):
-    args = ["gzip", "-1kf", file.name]
-
-    _run_cmd(args)
-
-
 def mcopy(img: BinaryIO, file: str, name: str):
     "Copy a file to a vfat image with a given name"
     args = ["mcopy", "-i", img.name, file, "::" + name]
