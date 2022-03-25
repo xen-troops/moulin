@@ -22,6 +22,9 @@ will also generate handy :code:`image-{image_name}` rules. They can be
 used to invoke :code:`rouge` with the same build options, as
 :code:`moulin` was invoked.
 
+Moulin also generates :code:`{image_name}.img.gz` and :code:`{image_name}.img.bmap`
+targets.
+
 Build inside yocto
 ------------------
 
