@@ -52,9 +52,4 @@ def gen_build(generator: ninja_syntax.Writer, images: List[RougeImage]):
                         f"{image.name}.img",
                         variables=dict(image_name=image.name, extra_args="-b"),
                         pool="console")
-        generator.build(f"{image.name}.gz",
-                        "rouge",
-                        f"{image.name}.img",
-                        variables=dict(image_name=image.name, extra_args="-z"),
-                        pool="console")
         generator.build(f"image-{image.name}", "phony", f"{image.name}.img")
