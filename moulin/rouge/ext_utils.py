@@ -67,12 +67,6 @@ def mkext4fs(file_out: BinaryIO, contents_dir=None):
     _run_cmd(args)
 
 
-def bmaptool(file: BinaryIO):
-    args = ["bmaptool", "create", "-o", file.name + ".bmap", file.name]
-
-    _run_cmd(args)
-
-
 def mkvfatfs(file_out: BinaryIO):
     "Create ext4 fs in given file"
     args = ["mkfs.vfat", file_out.name]

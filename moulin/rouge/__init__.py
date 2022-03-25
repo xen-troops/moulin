@@ -34,7 +34,7 @@ def get_available_images(root_node: YamlValue) -> List[RougeImage]:
 def gen_build_rules(generator: ninja_syntax.Writer):
     "Generate ninja rules to build images via rouge"
     moulin_args = " ".join(sys.argv[1:])
-    generator.rule("rouge", f"rouge {moulin_args} $extra_args -fi $image_name -o $out")
+    generator.rule("rouge", f"rouge {moulin_args} -fi $image_name -o $out")
     generator.newline()
 
 
@@ -46,10 +46,5 @@ def gen_build(generator: ninja_syntax.Writer, images: List[RougeImage]):
                         "rouge",
                         block_entry.get_deps(),
                         variables=dict(image_name=image.name),
-                        pool="console")
-        generator.build(f"{image.name}.bmap",
-                        "rouge",
-                        f"{image.name}.img",
-                        variables=dict(image_name=image.name, extra_args="-b"),
                         pool="console")
         generator.build(f"image-{image.name}", "phony", f"{image.name}.img")
