@@ -285,6 +285,38 @@ list of supported options:
   initialize `repo` repository right in component's build directory,
   as this is a main `repo` use case.
 
+
+unpack fetcher
+^^^^^^^^^^^^^^
+
+`unpack` fetcher used to unpack already available archives to a
+specified directory. Example use-case is when need to use 3rd-party
+code/resources that are not available in git repository. Full list of
+supported options:
+
+.. code-block:: yaml
+
+  type: unpack # Selects `unpack` fetcher
+  archive_type: tar
+  file: my_file.tar.gz
+  dir: "."
+
+* :code:`type` - mandatory - should be :code:`unpack` to enable `unpack` fetcher.
+* :code:`archive_type` - mandatory - type or archive. Now :code:`tar` and :code:`zip` are supported.
+* :code:`file` - mandatory - name of the archive file
+* :code:`dir` - optional - directory name which should be used for
+  code storage. If it is missing, `moulin` will use :code:`"."` to
+  unpack archive right into the component directory.
+
+Right now :code:`unpack` fetcher supports two archive types: :code:`tar` and :code:`zip`.
+
+* :code:`tar` actually supports not only plain `.tar` archives, but
+  also compressed archives like `.tar.gz`, `.tar.bz2` and so on. We
+  rely on `tar` ability to automatically select right de-compressor.
+* :code:`zip` - this is classic `zip` format. :code:`unzip` tool is
+  used to decompress this kind of archives, so it should be present on
+  user's machine.
+
 Builders
 --------
 
