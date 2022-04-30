@@ -49,7 +49,11 @@ def generate_build(conf: MoulinConfiguration,
             source_type = source["type"].as_str
             fetcher_module = fetcher_modules[source_type]
             fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
-            source_stamps.append(fetcher.gen_fetch())
+            fetcher_stamps = fetcher.gen_fetch()
+            if isinstance(fetcher_stamps, list):
+                source_stamps.extend(fetcher_stamps)
+            else:
+                source_stamps.append(fetcher_stamps)
 
         # Generate handy 'fetch-{component}' rule
         generator.build(f"fetch-{comp_name}", "phony", source_stamps)
