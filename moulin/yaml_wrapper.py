@@ -179,3 +179,9 @@ class YamlValue:  # pylint: disable=too-few-public-methods
 
     def __len__(self) -> int:
         return len(self._node.value)
+
+    def __contains__(self, key: str) -> bool:
+        """Test if key is present in mapping"""
+        if not isinstance(self._node, MappingNode):
+            raise YAMLProcessingError("Mapping node is expected", self.mark)
+        return key in self.keys()
