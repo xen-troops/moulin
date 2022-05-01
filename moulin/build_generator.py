@@ -45,15 +45,16 @@ def generate_build(conf: MoulinConfiguration,
         builder_conf = component["builder"]
 
         source_stamps = []
-        for source in component["sources"]:
-            source_type = source["type"].as_str
-            fetcher_module = fetcher_modules[source_type]
-            fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
-            fetcher_stamps = fetcher.gen_fetch()
-            if isinstance(fetcher_stamps, list):
-                source_stamps.extend(fetcher_stamps)
-            else:
-                source_stamps.append(fetcher_stamps)
+        if "sources" in component:
+            for source in component["sources"]:
+                source_type = source["type"].as_str
+                fetcher_module = fetcher_modules[source_type]
+                fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
+                fetcher_stamps = fetcher.gen_fetch()
+                if isinstance(fetcher_stamps, list):
+                    source_stamps.extend(fetcher_stamps)
+                else:
+                    source_stamps.append(fetcher_stamps)
 
         # Generate handy 'fetch-{component}' rule
         generator.build(f"fetch-{comp_name}", "phony", source_stamps)
@@ -87,11 +88,12 @@ def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
 
     deps: List[str] = []
     targets = builder.get_targets()
-    for source in component_node["sources"]:
-        source_type = source["type"].as_str
-        fetcher_module = fetcher_modules[source_type]
-        fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
-        deps.extend(fetcher.get_file_list())
+    if "sources" in component_node:
+        for source in component_node["sources"]:
+            source_type = source["type"].as_str
+            fetcher_module = fetcher_modules[source_type]
+            fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
+            deps.extend(fetcher.get_file_list())
     generator.simple_dep(targets, deps)
 
 
@@ -106,7 +108,8 @@ def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
 
 def _flatten_sources(conf: MoulinConfiguration):
     for _, component in yh.get_mandatory_mapping(conf.get_root_node(), "components"):
-        yh.flatten_list(yh.get_mandatory_sequence_node(component, "sources"))
+        if yh.get_node(component, "sources"):
+            yh.flatten_list(yh.get_mandatory_sequence_node(component, "sources"))
 
 
 def _get_modules(conf: MoulinConfiguration, generator: Optional[ninja_syntax.Writer]):
@@ -116,10 +119,11 @@ def _get_modules(conf: MoulinConfiguration, generator: Optional[ninja_syntax.Wri
         b_type = component["builder"]["type"].as_str
         if b_type not in builder_modules:
             builder_modules[b_type] = _prepare_builder(b_type, generator)
-        for source in component["sources"]:
-            f_type = source["type"].as_str
-            if f_type not in fetcher_modules:
-                fetcher_modules[f_type] = _prepare_fetcher(f_type, generator)
+        if "sources" in component:
+            for source in component["sources"]:
+                f_type = source["type"].as_str
+                if f_type not in fetcher_modules:
+                    fetcher_modules[f_type] = _prepare_fetcher(f_type, generator)
     return builder_modules, fetcher_modules
 
 
