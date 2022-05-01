@@ -487,3 +487,34 @@ Optional parameters:
   kernel image provided by this component into
   :code:`additional_deps`. This will ensure that Linux kernel will be
   built **before** Android.
+
+archive builder
+^^^^^^^^^^^^^^^
+
+Archive builder does is intended to create archive from other components.
+It can be used to gather build artifacts, for example. This builder
+uses `tar` to create archive files. Archives can be optionally compressed
+as, `tar` is invoked with `--auto-compress` option.
+
+.. code-block:: yaml
+
+  builder:
+    type: archive        # Should be 'artchive'
+    name: "artifacts.tar.bz"
+    items:
+      - "yocto/build/tmp/deploy/images/generic-armv8-xt/Image"
+      - "yocto/build/tmp/deploy/images/generic-armv8-xt/uInitramfs"
+
+Mandatory options:
+
+* :code:`type` - Builder type. Should be :code:`archive` for this type
+  of builder.
+
+* :code:`name` - Name of archive file. Add suffix like `tar.bz2` to
+  make `tar` compress archive with desired compressing algorithm.
+
+* :code:`items` - list of files or directories that should be added
+  do the archive. Please ensure that those files or directories present
+  in other components :code:`target_images` sections, so Ninja can
+  build correct dependencies. All paths are relative to base build
+  directory (where .yaml file resides).
