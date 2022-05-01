@@ -101,7 +101,7 @@ name and value is an another dictionary with component settings:
 
 There are two main parts of each `component` description: :code:`sources` and :code:`builder`.
 
-:code:`sources` should contain list of source code definition, which
+:code:`sources` is optional and can contain list of source code definition, which
 will be fetched prior starting a build:
 
 .. code-block:: yaml
