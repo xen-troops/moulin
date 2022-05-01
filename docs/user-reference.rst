@@ -467,8 +467,8 @@ using `repo` fetcher.
 
 Mandatory options:
 
-* :code:`type` - Builder type. Should be :code:`android` for this type
-  of builder.
+* :code:`type` - Builder type. Should be :code:`android_kernel` for
+  this type of builder.
 
 * :code:`target_images` - list of image files that should be generated
   by this component as a result of invoking :code:`build.sh`
