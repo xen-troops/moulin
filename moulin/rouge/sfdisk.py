@@ -31,10 +31,15 @@ def _align(val, align) -> int:
 def _to_script(part: Any, sector_size=512) -> str:
     "Convert GPT Partition object to sfdisk script line"
 
-    return ", ".join([
+    args = [
         f"start={_sect(part.start, sector_size)}", f"size={_sect(part.size, sector_size)}",
         f"type={part.gpt_type}", f"name={part.label}"
-    ])
+    ]
+
+    if part.gpt_guid:
+        args.append(f"uuid={part.gpt_guid}")
+
+    return ", ".join(args)
 
 
 def _check_sfdisk():

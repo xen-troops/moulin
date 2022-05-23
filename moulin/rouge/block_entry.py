@@ -37,6 +37,7 @@ class GPTPartition(NamedTuple):
     "Represents one partition in GPT"
     label: str
     gpt_type: str
+    gpt_guid: str
     start: int
     size: int
     entry: BlockEntry
@@ -51,8 +52,8 @@ class GPT(BlockEntry):
 
         for part_id, part in node["partitions"].items():
             label = part_id
-            entry_obj, gpt_type = self._process_entry(part)
-            self._partitions.append(GPTPartition(label, gpt_type, start=0, size=0, entry=entry_obj))
+            entry_obj, gpt_type, gpt_guid = self._process_entry(part)
+            self._partitions.append(GPTPartition(label, gpt_type, gpt_guid, start=0, size=0, entry=entry_obj))
 
     def size(self) -> int:
         "Returns size in bytes"
@@ -68,7 +69,9 @@ class GPT(BlockEntry):
             log.warning("No GPT type is provided %s, using default", node.mark)
             gpt_type = "8DA63339-0007-60C0-C436-083AC8230908"
 
-        return (entry_obj, gpt_type)
+        gpt_guid = node.get("gpt_guid", "").as_str
+
+        return (entry_obj, gpt_type, gpt_guid)
 
     def _complete_init(self):
         partitions = [x._replace(size=x.entry.size()) for x in self._partitions]
