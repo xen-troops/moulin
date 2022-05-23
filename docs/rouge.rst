@@ -284,6 +284,7 @@ virtual machines and wish to provide VM with own GPT.
    partitions:
      boot: # partition label
        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+       gpt_guid: 8DA63339-0007-60C0-C436-083AC8230900 # Partition GUID
        type: empty
        size: 30 MiB
      rootfs:
@@ -298,12 +299,22 @@ includes Raw Image block.
 :code:`partitions:` section is mandatory. It defines list of
 partitions, where key is a partition label.
 
-Each partition contains definition of other block type plus optional
-(but we strongly suggest to provide it) key :code:`gpt_type:`. This
-key holds GPT Partition Type GUID. List of widely used types can be
-found on
+Each partition contains definition of other block type plus optional keys:
+
+:code:`gpt_type:` (which we strongly suggest to provide) key holds GPT Partition
+Type GUID. List of widely used types can be found on
 `Wikipedia <https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs>`_,
 for example.
+
+:code:`gpt_guid:` key sets the GPT Partition GUID. By default this GUID is generated
+automatically to ensure that every partition in the world would have unique
+identifier. But there are some cases when external software depends on exact value
+of a partition GUID. In such cases it is possible to hard-code this value. We
+strongly recommend not to use this key except for the cases when this is neccessary
+because, accoding to the page 121 of
+`Specification <https://uefi.org/sites/default/files/resources/UEFI_Spec_2_8_final.pdf>`_
+the software that makes copied of GPT-formatted disks and partitions must generate
+new Unique Partition GUID in each GPT Partition Entry.
 
 `rouge` will place partitions one after another, aligning partition
 start to 1 MiB (as per standard recommendation) and partition size to
@@ -343,6 +354,7 @@ The following example provides multiple different images:
              "initrd": "yocto/build/tmp/deploy/images/generic-armv8-xt/uInitrd"
          domd_rootfs:
            gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+           gpt_guid: 8DA63339-0007-60C0-C436-083AC8230900 # Partition GUID
            type: raw_image
            image_path: "yocto/build-domd/tmp/deploy/images/machine/core-image-weston.ext4"
 
