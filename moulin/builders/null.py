@@ -43,7 +43,5 @@ class NullBuilder:
 
     def capture_state(self):
         """
-        This method should capture Android Kernel state for a reproducible builds.
-        Luckily, there is nothing to do, as Android state is controlled solely by
-        its repo state. And repo state is captured by repo fetcher code.
+        This method should capture state for reproducible builds.
         """
