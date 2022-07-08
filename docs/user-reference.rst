@@ -218,9 +218,8 @@ User can chose parameter's options using command line arguments, as described in
 Fetchers
 --------
 
-Fetchers are the `moulin` plugins responsible for code download. Right
-now only `git` and `repo` are supported. Fetchers are used to download
-all sources listed in :code:`sources` section of a component.
+Fetchers are the `moulin` plugins responsible for downloading of
+sources listed in :code:`sources` section of a component.
 
 `moulin` will generate phony Ninja target
 :code:`fetch-{component_name}` for every component. It can be used to
@@ -320,8 +319,7 @@ Right now :code:`unpack` fetcher supports two archive types: :code:`tar` and :co
 Builders
 --------
 
-Builders are the `moulin` plugins responsible for actual image building. Right
-now only `yocto` and `android` are supported.
+Builders are the `moulin` plugins responsible for actual image building.
 
 `moulin` will generate phony Ninja target
 :code:`{component_name}` for every component. It can be used to
