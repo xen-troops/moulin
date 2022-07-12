@@ -316,6 +316,34 @@ Right now :code:`unpack` fetcher supports two archive types: :code:`tar` and :co
   used to decompress this kind of archives, so it should be present on
   user's machine.
 
+west fetcher
+^^^^^^^^^^^^
+
+`west` fetcher is used to download code using Zephyr's `west` meta-tool.
+Full list of supported options:
+
+.. code-block:: yaml
+
+  type: west # Selects `west` fetcher
+  url: https://manifest.address/zephyr
+  rev: manifest-revision
+  file: manifest-file.yml
+
+* :code:`type` - mandatory - should be :code:`west` to enable `west` fetcher.
+* :code:`url` - optional - manifest repository URL. You can provide
+  any URL that is supported by `west` itself. This corresponds to
+  `west init`'s :code:`-m` option.
+* :code:`rev` - optional - manifest revision. Corresponds to `west init`'s
+  :code:`--mr` option.
+* :code:`file` - optional - manifest file name. Corresponds to `west init`'s
+  :code:`--mf` option.
+
+For additional details see documentation on `west init`:
+https://docs.zephyrproject.org/latest/develop/west/built-in.html#west-init
+
+Regarding installation of `west`, please see:
+https://docs.zephyrproject.org/latest/develop/west/install.html
+
 Builders
 --------
 
