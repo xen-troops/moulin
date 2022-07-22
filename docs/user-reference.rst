@@ -218,9 +218,8 @@ User can chose parameter's options using command line arguments, as described in
 Fetchers
 --------
 
-Fetchers are the `moulin` plugins responsible for code download. Right
-now only `git` and `repo` are supported. Fetchers are used to download
-all sources listed in :code:`sources` section of a component.
+Fetchers are the `moulin` plugins responsible for downloading of
+sources listed in :code:`sources` section of a component.
 
 `moulin` will generate phony Ninja target
 :code:`fetch-{component_name}` for every component. It can be used to
@@ -317,11 +316,38 @@ Right now :code:`unpack` fetcher supports two archive types: :code:`tar` and :co
   used to decompress this kind of archives, so it should be present on
   user's machine.
 
+west fetcher
+^^^^^^^^^^^^
+
+`west` fetcher is used to download code using Zephyr's `west` meta-tool.
+Full list of supported options:
+
+.. code-block:: yaml
+
+  type: west # Selects `west` fetcher
+  url: https://manifest.address/zephyr
+  rev: manifest-revision
+  file: manifest-file.yml
+
+* :code:`type` - mandatory - should be :code:`west` to enable `west` fetcher.
+* :code:`url` - optional - manifest repository URL. You can provide
+  any URL that is supported by `west` itself. This corresponds to
+  `west init`'s :code:`-m` option.
+* :code:`rev` - optional - manifest revision. Corresponds to `west init`'s
+  :code:`--mr` option.
+* :code:`file` - optional - manifest file name. Corresponds to `west init`'s
+  :code:`--mf` option.
+
+For additional details see documentation on `west init`:
+https://docs.zephyrproject.org/latest/develop/west/built-in.html#west-init
+
+Regarding installation of `west`, please see:
+https://docs.zephyrproject.org/latest/develop/west/install.html
+
 Builders
 --------
 
-Builders are the `moulin` plugins responsible for actual image building. Right
-now only `yocto` and `android` are supported.
+Builders are the `moulin` plugins responsible for actual image building.
 
 `moulin` will generate phony Ninja target
 :code:`{component_name}` for every component. It can be used to
@@ -518,3 +544,43 @@ Mandatory options:
   in other components :code:`target_images` sections, so Ninja can
   build correct dependencies. All paths are relative to base build
   directory (where .yaml file resides).
+
+zephyr builder
+^^^^^^^^^^^^^^
+
+This builder is used to build applications based on Zephyr OS.
+It uses Zephyr OS meta-tool `west`. Required code is expected
+to be fetched by `west` fetcher.
+
+.. code-block:: yaml
+
+  builder:
+    type: zephyr
+    board: xenvm
+    target: samples/synchronization
+    target_images:
+      - "zephyr/build/zephyr/zephyr.bin"
+
+Mandatory options:
+
+* :code:`type` - builder type. Should be :code:`zephyr` for this type
+  of builder.
+
+* :code:`board` - target board name. For example: `xenvm` or `xenvm_gicv3`
+  for Xen-based builds. Corresponds to `west build`'s :code:`-b` option.
+  See Zephyr's documentation for the list of allowed values.
+
+* :code:`target` - build target. This will be used to run the build:
+  :code:`$ west build {target}`. For example: `samples/synchronization` or
+  `samples/hello_world`.
+
+* :code:`target_images` - list of image files that should be generated
+  by this builder. For standard build, it is expected to be
+  "zephyr/build/zephyr/zephyr.bin"
+
+Please note that this builder uses :code:`--pristine=auto` command-line option.
+
+Proper versions of CMake and Zephyr SDK have to be installed on the host.
+
+For additional details please see
+https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html#building-west-build
