@@ -72,7 +72,7 @@ def _handle_shared_opts(description: str,
         our_ver = Version(importlib_metadata.version("moulin"))
         if our_ver < conf.min_ver:
             raise Exception(f"Config file requires version {conf.min_ver}," +
-                            f" while you are running mouilin {our_ver}")
+                            f" while you are running moulin {our_ver}")
 
     prog = f"{sys.argv[0]} {args.conf}"
     desc = f"Config file description: {conf.desc}"
