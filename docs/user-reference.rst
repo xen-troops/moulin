@@ -228,7 +228,7 @@ just fetch sources without building anything.
 git fetcher
 ^^^^^^^^^^^
 
-`git` fetcher used to download code from a remote or local git
+`git` fetcher is used to download code from a remote or local git
 repositories. There is a full list of supported parameters:
 
 .. code-block:: yaml
@@ -254,7 +254,7 @@ repositories. There is a full list of supported parameters:
 repo fetcher
 ^^^^^^^^^^^^
 
-`repo` fetcher used to download code using Google's `repo` tool. Full
+`repo` fetcher is used to download code using Google's `repo` tool. Full
 list of supported options:
 
 .. code-block:: yaml
@@ -288,7 +288,7 @@ list of supported options:
 unpack fetcher
 ^^^^^^^^^^^^^^
 
-`unpack` fetcher used to unpack already available archives to a
+`unpack` fetcher is used to unpack already available archives to a
 specified directory. Example use-case is when need to use 3rd-party
 code/resources that are not available in git repository. Full list of
 supported options:
