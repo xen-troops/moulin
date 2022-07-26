@@ -65,7 +65,7 @@ def fixup_partition_table(partitions: List[Any], sector_size=512) -> Tuple[List[
     end = start_offset * sector_size
     ret = []
     for part in partitions:
-        start = _align(end + 1, DEFAULT_ALIGNMENT)  # Align to 1 MB
+        start = _align(end, DEFAULT_ALIGNMENT)  # Align to 1 MB
         size = _align(part.size, sector_size)
         ret.append(part._replace(start=start, size=size))
         end = start + size
