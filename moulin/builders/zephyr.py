@@ -27,6 +27,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         # Generate fetcher dependency file
         construct_fetcher_dep_cmd(),
         "cd $build_dir/zephyr",
+        "source zephyr-env.sh",
         "west build -p auto -b $board $target",
     ])
     generator.rule("zephyr_build",
