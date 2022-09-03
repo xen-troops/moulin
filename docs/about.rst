@@ -8,7 +8,7 @@ command. `moulin` is made exactly for this task.
 
 But `moulin` also can be used to build simpler projects like
 standalone Yocto distribution or AOSP. As `moulin` project file
-includes both code location and build instructions, is is much easier
+includes both code location and build instructions, it is much easier
 to invoke :code:`moulin myproject.yaml` to get the complete build than
 to fumble with Yocto layers and configs.
 
