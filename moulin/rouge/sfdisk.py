@@ -83,7 +83,7 @@ def write(fileo: BinaryIO, partitions: List[Any]):
     script = _sfdisk_header() + "\n"
     script += "\n".join(map(_to_script, partitions))
 
-    log.debug("sfdisk script: %s", script)
+    log.debug("sfdisk script:\n---\n%s\n---", script)
     log.info("Creating GPT partition in %s", fileo.name)
     subprocess.run(["sfdisk", fileo.name],
                    input=bytes(script, 'UTF-8'),
