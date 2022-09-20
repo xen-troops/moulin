@@ -127,6 +127,7 @@ Images are specified in the following way:
    images:
      image_name_a:
        desc: "Description for the first image"
+       image_size: 512 MiB
        type: gpt
        ... block description ...
      image_name_b:
@@ -144,6 +145,14 @@ image names. Every image can have description, which will be displayed
 when `rouge` lists available images. :code:`type:` key is mandatory as
 it defines type of block. Supported block types as described in the
 following sections.
+
+Also you may specify the required size of image using
+:code:`image_size:`. Please see section 'Size Designation' below for
+supported notation. If actual size of all partitions will be less than
+:code:`image_size:` then image will be blown up to :code:`image_size:`.
+If actual size is bigger than specified - error will be printed with
+explanation like "Actual size (20000) of image is bigger than requested
+one (10000)."
 
 Block descriptions
 ------------------
