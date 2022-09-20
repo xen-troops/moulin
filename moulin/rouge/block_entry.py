@@ -12,6 +12,7 @@ import itertools
 from typing import List, Tuple, NamedTuple, cast
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
+from typing import Optional
 from yaml import Mark
 from moulin.rouge import sfdisk, ext_utils
 from moulin.yaml_helpers import YAMLProcessingError
@@ -49,6 +50,11 @@ class GPT(BlockEntry):
     def __init__(self, node: YamlValue):
         self._partitions: List[GPTPartition] = []
         self._size: int = 0
+        self._requested_image_size: Optional[int] = None
+
+        _requested_image_size_node = node.get("image_size", None)
+        if _requested_image_size_node:
+            self._requested_image_size = _parse_size(_requested_image_size_node)
 
         for part_id, part in node["partitions"].items():
             label = part_id
@@ -56,9 +62,17 @@ class GPT(BlockEntry):
             self._partitions.append(GPTPartition(label, gpt_type, gpt_guid, start=0, size=0, entry=entry_obj))
 
     def size(self) -> int:
-        "Returns size in bytes"
+        "Returns size of image in bytes. Requested in yaml or actually calculated."
         if not self._size:
             self._complete_init()
+
+        if self._requested_image_size:
+            if self._requested_image_size < self._size:
+                raise Exception(
+                    f"Actual size ({self._size}) of image is bigger than requested one ({self._requested_image_size}).")
+            else:
+                self._size = self._requested_image_size
+
         return self._size
 
     @staticmethod
