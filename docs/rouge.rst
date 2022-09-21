@@ -182,7 +182,7 @@ defines empty block with size of 4096 bytes. `rouge` supports some SI suffixes:
  - :code:`GiB` - gibibyte - 1024 mebibytes or 1 073 741 824 bytes
 
 Suffix must be separated from number by space. For example:
-:code:`size: 4 MiB` defines size of 4 mebibytes or 4 194 304 bytes.
+:code:`size: 4 MiB` defines size of 4 mebibytes or 4 194 304 bytes.
 
 Empty block
 ^^^^^^^^^^^
