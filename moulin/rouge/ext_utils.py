@@ -79,3 +79,11 @@ def mcopy(img: BinaryIO, file: str, name: str):
     args = ["mcopy", "-i", img.name, file, "::" + name]
 
     _run_cmd(args)
+
+
+def mmd(img: BinaryIO, folders: list):
+    "Create directories inside a vfat image"
+    args = ["mmd", "-i", img.name]
+    args.extend(folders)
+
+    _run_cmd(args)

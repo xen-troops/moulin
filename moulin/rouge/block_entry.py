@@ -271,6 +271,12 @@ class Ext4(FileSystem):
             self._complete_init()
         with NamedTemporaryFile() as tempf, TemporaryDirectory() as tempd:
             for remote, local, _ in self._files:
+                # create destination subfolders
+                remote_path_and_name = os.path.split(remote)
+                if remote_path_and_name[0]:
+                    # create destination subfolder
+                    os.makedirs(os.path.join(tempd, remote_path_and_name[0]), exist_ok=True)
+
                 shutil.copyfile(local, os.path.join(tempd, remote))
             tempf.truncate(self._size)
             ext_utils.mkext4fs(tempf, tempd)
@@ -285,6 +291,35 @@ class Vfat(FileSystem):
         with NamedTemporaryFile() as tempf:
             tempf.truncate(self._size)
             ext_utils.mkvfatfs(tempf)
+            # scan all remote filenames and collect the list of folders to create
+            list_for_mmd = list()
+            for remote, _, _ in self._files:
+                # remove starting '/' to avoid:
+                # - icluding different forms of same name, like "/zxc" and "zxc"
+                # - adding root folder "/" to list
+                remote_path_and_name = os.path.split(remote.lstrip('/'))
+                if remote_path_and_name[0]:
+                    # Here is explanation of what we do here.
+                    # mmd can't create chain of folders like '/a/s/d' if parent
+                    # folders (/a/s/) do not exist.
+                    # You need to create each subfolder by separate call or provide them
+                    # in incremental way, like `mmd /a /a/s /a/s/d`.
+                    # Taking into account that we work with an image file,
+                    # we need to prefix each folder with "::".
+                    # So here we split each folder into slices,
+                    # and re-assemble slices in incremental way.
+                    current_path = ""
+                    for path_slice in remote_path_and_name[0].split('/'):
+                        if path_slice:
+                            current_path += "/" + path_slice
+                            list_for_mmd.append("::" + current_path)
+            if list_for_mmd:
+                # Remove duplicates by transforming the list of strings to the set of strings.
+                # And sort strings because after 'set()' we may have 'a/s/d' before 'a/s' in some cases.
+                list_for_mmd = sorted(set(list_for_mmd))
+                # create all destination subfolders at once
+                ext_utils.mmd(tempf, list_for_mmd)
+
             for remote, local, _ in self._files:
                 ext_utils.mcopy(tempf, local, remote)
             ext_utils.dd(tempf, fp, offset)
