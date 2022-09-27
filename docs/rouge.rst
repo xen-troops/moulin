@@ -266,7 +266,7 @@ currently `ext4` and `vfat` are supported.
 :code:`files:` section is optional. It defines :code:`remote:local`
 mapping of files that should be presented on newly created
 filesystem. :code:`remote` part is how the file will be named on new
-filesystem, while :code:`remote` is a path on your disk.
+filesystem, while :code:`local` is a path on your disk.
 
 :code:`size` is optional. `rouge` will calculate total file size and
 add some space for the filesystem metadata to determine block size.
