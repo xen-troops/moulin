@@ -271,6 +271,10 @@ class Ext4(FileSystem):
             self._complete_init()
         with NamedTemporaryFile() as tempf, TemporaryDirectory() as tempd:
             for remote, local, _ in self._files:
+                # user can specify destination folder from root
+                # and we need to remove very first '/' for correct
+                # work of os.path.join
+                remote = remote.lstrip('/')
                 # create destination subfolders
                 remote_path_and_name = os.path.split(remote)
                 if remote_path_and_name[0]:
