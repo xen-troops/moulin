@@ -4,7 +4,7 @@
 External utils interfaces/wrappers for rouge image builder
 """
 
-from typing import BinaryIO, Union
+from typing import BinaryIO, Union, Optional
 import subprocess
 import logging
 
@@ -17,7 +17,7 @@ def _run_cmd(args):
 
 
 # pylint: disable=invalid-name
-def dd(file_in: Union[str, BinaryIO], file_out: BinaryIO, out_offset: int):
+def dd(file_in: Union[str, BinaryIO], file_out: BinaryIO, out_offset: int, out_size: Optional[int] = None):
     "Run dd with the given arguments"
     # Try to guess block size. We would like to use as big block as
     # possible. But we need take into account that "seek" parameter
@@ -40,6 +40,8 @@ def dd(file_in: Union[str, BinaryIO], file_out: BinaryIO, out_offset: int):
         "conv=sparse",
         "conv=notrunc",
     ]  # yapf: disable
+    if out_size:
+        args.append(f"count={out_size // blocksize}")
     _run_cmd(args)
 
 
