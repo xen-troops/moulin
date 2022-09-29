@@ -187,15 +187,23 @@ Suffix must be separated from number by space. For example:
 Empty block
 ^^^^^^^^^^^
 
-Empty block is a block that is not filled with any
-information. `rouge` will write nothing into this block.
+Empty block is a block that does not contain any file or
+raw image. `rouge` will write nothing into this block if
+:code:`filled: zeroes` option is not specified.
 
 .. code-block:: yaml
 
    type: empty # defines empty block
    size: 4096
+   filled: zeroes
 
 :code:`size` is mandatory, as `rouge` can't infer it.
+
+:code:`filled` is optional, with only `zeroes` value allowed for now.
+This option may be used if you need the block to be filled with zeroes.
+For example, this is used for some Android partitions, like 'rpmbemul'.
+Use this option only if you really need to. Otherwise you will needlessly
+increase size and upload time of an image.
 
 .. _rouge-raw-image-block:
 

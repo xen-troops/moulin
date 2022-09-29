@@ -214,10 +214,15 @@ class EmptyEntry(BlockEntry):
 
     def __init__(self, node: YamlValue):
         self._size = _parse_size(node["size"])
+        self._fill_by_zero = (node.get("filled", "").as_str == "zeroes")
 
     def size(self) -> int:
         "Returns size in bytes"
         return self._size
+
+    def write(self, fp, offset):
+        if self._fill_by_zero:
+            ext_utils.dd("/dev/zero", fp, offset, out_size=self._size)
 
 
 class FileSystem(BlockEntry):
