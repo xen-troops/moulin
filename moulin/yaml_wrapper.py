@@ -38,21 +38,21 @@ class _YamlDefaultValue:
     def as_str(self) -> str:
         "Get the string value"
         if not isinstance(self._val, str):
-            raise TypeError("Expected boolean value")
+            raise TypeError("Expected string value")
         return self._val
 
     @property
     def as_int(self) -> int:
         "Get the integer value"
         if not isinstance(self._val, int):
-            raise TypeError("Expected boolean value")
+            raise TypeError("Expected int value")
         return self._val
 
     @property
     def as_float(self) -> float:
         "Get the floating point value"
         if not isinstance(self._val, int):
-            raise TypeError("Expected boolean value")
+            raise TypeError("Expected float value")
         return self._val
 
 
@@ -94,7 +94,7 @@ class YamlValue:  # pylint: disable=too-few-public-methods
     @property
     def as_float(self) -> float:
         "Get the floating point value"
-        if not isinstance(self._val, int):
+        if not isinstance(self._val, float):
             raise YAMLProcessingError(f"Expected floating point value, got {type(self._val)}",
                                       self.mark)
         return self._val
