@@ -55,7 +55,7 @@ class RepoFetcher:
         rev = self.conf.get("rev", "").as_str
         if rev:
             repo_args.append(f"-b {shlex.quote(rev)}")
-        depth = self.conf.get("depth", "").as_int
+        depth = self.conf.get("depth", 0).as_int
         if depth:
             repo_args.append(f"--depth={depth}")
         groups = self.conf.get("groups", "").as_str
