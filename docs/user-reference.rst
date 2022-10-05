@@ -7,8 +7,20 @@ Invoking moulin
 ---------------
 
 `moulin` has one mandatory parameter - file name of build
-description. It should be in YAML format. List of supported keys is
-provided in the next section.
+description. It should be in YAML format.
+You may use a regular local file or URL. `moulin` detects
+URL by the presence of a protocol prefix, like `https://`.
+If you use the URL to GitHub or another network repository,
+you can use the URL for the raw file only, not for a web
+page with that file.
+For example, this URL points to the correct YAML file:
+`https://raw.githubusercontent.com/xen-troops/meta-xt-prod-devel-rcar/master/prod-devel-rcar.yaml`.
+But the following URL can't be used, because it points to
+GitHub's web page:
+`https://github.com/xen-troops/meta-xt-prod-devel-rcar/blob/master/prod-devel-rcar.yaml`.
+Pay attention, that file will be downloaded only if a file
+with the same name doesn't exist in the current folder.
+This is done to preserve possible local changes made by a user.
 
 As a result, `moulin` will generate :code:`ninja.build` file. You can
 then invoke `ninja` to perform the actual build. `moulin` adds
