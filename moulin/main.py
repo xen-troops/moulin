@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 import importlib_metadata
 import yaml
+from urllib.parse import urlparse, unquote
+import urllib.request
+import os.path
 
 from packaging.version import Version
 
@@ -53,6 +56,27 @@ def _prepre_shared_opts(description: str,
     return parser
 
 
+def _get_conf_file(conf_location: str) -> str:
+    """Try to determine config file location. Check if input string is URL
+    and download it if output file is not already present. If input string is
+    not an URL, then assume that this is a local file and return it as is."""
+    local_filename = conf_location
+
+    parsed_url = urlparse(conf_location)
+    if parsed_url.scheme:
+        # it's not local file, so we extract filename
+        # and download the file if it isn't present
+        local_filename = os.path.basename(unquote(parsed_url.path))
+        if os.path.exists(local_filename):
+            # preserve possible local changes
+            log.warn("Local copy already exists. Nothing has been downloaded.")
+        else:
+            log.info("Downloading from URL...")
+            urllib.request.urlretrieve(conf_location, local_filename)
+
+    return local_filename
+
+
 def _handle_shared_opts(description: str,
                         additional_opts: List[OptionDef] = None,
                         exclusive_opts: List[List[OptionDef]] = None):
@@ -66,7 +90,9 @@ def _handle_shared_opts(description: str,
         loglevel = logging.DEBUG
     logging.basicConfig(level=loglevel, format="[%(levelname)s] %(message)s")
 
-    conf = MoulinConfiguration(yaml.compose(open(args.conf)))
+    local_conf_file = _get_conf_file(args.conf)
+
+    conf = MoulinConfiguration(yaml.compose(open(local_conf_file)))
 
     if conf.min_ver:
         our_ver = Version(importlib_metadata.version("moulin"))
@@ -74,7 +100,7 @@ def _handle_shared_opts(description: str,
             raise Exception(f"Config file requires version {conf.min_ver}," +
                             f" while you are running moulin {our_ver}")
 
-    prog = f"{sys.argv[0]} {args.conf}"
+    prog = f"{sys.argv[0]} {local_conf_file}"
     desc = f"Config file description: {conf.desc}"
     config_argparser = argparse.ArgumentParser(description=desc, prog=prog, add_help=False)
     for parameter in conf.get_parameters().values():
