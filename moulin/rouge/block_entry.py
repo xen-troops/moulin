@@ -231,20 +231,29 @@ class FileSystem(BlockEntry):
     def __init__(self, node: YamlValue):
         self._node = node
         self._size = 0
-        self._files: List[Tuple[str, str, Mark]] = []
+        self._items: List[Tuple[str, str, Mark]] = []
+
         files_node = self._node.get("files", None)
         if files_node:
+            log.warn("Usage of 'files' is deprecated. Use 'items' please.")
             for remote_node, local_node in cast(YamlValue, files_node).items():
                 remote_name = remote_node
                 local_name = local_node.as_str
-                self._files.append((remote_name, local_name, local_node.mark))
+                self._items.append((remote_name, local_name, local_node.mark))
+
+        items_node = self._node.get("items", None)
+        if items_node:
+            for remote_node, local_node in cast(YamlValue, items_node).items():
+                remote_name = remote_node
+                local_name = local_node.as_str
+                self._items.append((remote_name, local_name, local_node.mark))
 
     def _complete_init(self):
-        for _, local_name, local_mark in self._files:
+        for _, local_name, local_mark in self._items:
             if not os.path.isfile(local_name):
                 raise YAMLProcessingError(f"Can't find file '{local_name}'", local_mark)
 
-        files_size = sum([os.path.getsize(x[1]) for x in self._files]) + 8 * 1024 * 1024
+        files_size = sum([os.path.getsize(x[1]) for x in self._items]) + 8 * 1024 * 1024
         size_node = self._node.get("size", None)
         if size_node:
             self._size = _parse_size(size_node)
@@ -266,7 +275,7 @@ class FileSystem(BlockEntry):
 
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
-        return [f[1] for f in self._files]
+        return [f[1] for f in self._items]
 
 
 class Ext4(FileSystem):
@@ -275,7 +284,7 @@ class Ext4(FileSystem):
         if not self._size:
             self._complete_init()
         with NamedTemporaryFile() as tempf, TemporaryDirectory() as tempd:
-            for remote, local, _ in self._files:
+            for remote, local, _ in self._items:
                 # user can specify destination folder from root
                 # and we need to remove very first '/' for correct
                 # work of os.path.join
@@ -302,7 +311,7 @@ class Vfat(FileSystem):
             ext_utils.mkvfatfs(tempf)
             # scan all remote filenames and collect the list of folders to create
             list_for_mmd = list()
-            for remote, _, _ in self._files:
+            for remote, _, _ in self._items:
                 # remove starting '/' to avoid:
                 # - icluding different forms of same name, like "/zxc" and "zxc"
                 # - adding root folder "/" to list
@@ -329,7 +338,7 @@ class Vfat(FileSystem):
                 # create all destination subfolders at once
                 ext_utils.mmd(tempf, list_for_mmd)
 
-            for remote, local, _ in self._files:
+            for remote, local, _ in self._items:
                 ext_utils.mcopy(tempf, local, remote)
             ext_utils.dd(tempf, fp, offset)
 
