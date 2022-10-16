@@ -262,7 +262,7 @@ partitions, where you store kernel, initial ramdisk and so on.
 
    type: ext4 # defines ext4 partition block
    size: 30 MiB
-   files:
+   items:
      "remote_file1": "path/to/local/file1"
      "remote_file2": "path/to/local/file2"
      "remote_file3": "path/to/local/file3"
@@ -271,12 +271,14 @@ partitions, where you store kernel, initial ramdisk and so on.
 :code:`type` is required. Defines the filesystem type,
 currently `ext4` and `vfat` are supported.
 
-:code:`files:` section is optional. It defines :code:`remote:local`
+:code:`items:` section is optional. It defines :code:`remote:local`
 mapping of files that should be presented on newly created
 filesystem. :code:`remote` part is how the file will be named on new
 filesystem, while :code:`local` is a path on your disk.
 You can specify parent folders for :code:`remote` and these folders
 will be created on the destination filesystem.
+Older versions of `rouge` used :code:`files:` as the name of the
+section. This name is still possible to use, but it is deprecated.
 
 :code:`size` is optional. `rouge` will calculate total file size and
 add some space for the filesystem metadata to determine block size.
@@ -362,7 +364,7 @@ The following example provides multiple different images:
            gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
            type: ext4
            size: 30 MiB
-           files:
+           items:
              "Image": "yocto/build/tmp/deploy/images/generic-armv8-xt/Image"
              "initrd": "yocto/build/tmp/deploy/images/generic-armv8-xt/uInitrd"
          domd_rootfs:
