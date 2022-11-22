@@ -78,7 +78,10 @@ def get_mandatory_sequence_node(node: MappingNode, name: str) -> SequenceNode:
 
 def flatten_list(node: SequenceNode) -> None:
     "Flatten sequence of sequences in-place"
-    for element in node.value:
+
+    # Copy contents of node.value into a new list
+    # because we will be modifying original one
+    for element in list(node.value):
         if isinstance(element, SequenceNode):
             node.value.remove(element)
             node.value.extend(element.value)
