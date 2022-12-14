@@ -572,6 +572,9 @@ to be fetched by `west` fetcher.
     target: samples/synchronization
     target_images:
       - "zephyr/build/zephyr/zephyr.bin"
+    env:
+      - "MY_ENV_VAR=my_value"
+
 
 Mandatory options:
 
@@ -589,6 +592,11 @@ Mandatory options:
 * :code:`target_images` - list of image files that should be generated
   by this builder. For standard build, it is expected to be
   "zephyr/build/zephyr/zephyr.bin"
+
+Optional parameters:
+
+* :code:`env` - list of additional environment variables that should
+  be exported before calling :code:`west build`.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 

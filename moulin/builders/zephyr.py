@@ -28,7 +28,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         construct_fetcher_dep_cmd(),
         "cd $build_dir/zephyr",
         "source zephyr-env.sh",
-        "west build -p auto -b $board $target",
+        "$env west build -p auto -b $board $target",
     ])
     generator.rule("zephyr_build",
                    command=f'bash -c "{cmd}"',
@@ -54,11 +54,20 @@ class ZephyrBuilder:
 
     def gen_build(self):
         """Generate Ninja rules to build Zephyr"""
+
+        env_node = self.conf.get("env", None)
+        if env_node:
+            env_values = [x.as_str for x in env_node]
+        else:
+            env_values = []
+        env = " ".join(env_values)
+
         variables = {
             "name": self.name,
             "build_dir": self.build_dir,
             "board": self.conf["board"].as_str,
             "target": self.conf["target"].as_str,
+            "env": env,
         }
         targets = self.get_targets()
         deps = list(self.src_stamps)
