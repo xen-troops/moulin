@@ -574,6 +574,9 @@ to be fetched by `west` fetcher.
       - "zephyr/build/zephyr/zephyr.bin"
     env:
       - "MY_ENV_VAR=my_value"
+    ext_files:
+      "file_1": "path/to/external/file_1"
+      "abc/file_BB": "path/to/external/file_2"
 
 
 Mandatory options:
@@ -597,6 +600,13 @@ Optional parameters:
 
 * :code:`env` - list of additional environment variables that should
   be exported before calling :code:`west build`.
+
+* :code:`ext_files` - defines :code:`destination_name:path_to_source_file`
+  mapping of external files that need to be collected before calling
+  :code:`west build`. The destination is specified relative to zephyr's
+  :code:`build-dir`, and can include subdirectories. If the destination
+  path is specified then it will be created. You can rename the source
+  file by providing its new name in the destination part.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 
