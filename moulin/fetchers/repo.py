@@ -63,7 +63,7 @@ class RepoFetcher:
             repo_args.append(f"-g {groups}")
 
         init_target = os.path.join(self.repo_dir, ".repo")
-        sync_stamp = create_stamp_name(self.build_dir, self.url, "sync")
+        sync_stamp = create_stamp_name(self.repo_dir, self.url, "sync")
 
         self.generator.build(init_target,
                              "repo_init",

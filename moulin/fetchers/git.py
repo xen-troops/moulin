@@ -61,7 +61,7 @@ class GitFetcher:
     def gen_fetch(self):
         """Generate instruction to fetch git repo"""
         clone_target = self.git_dir
-        checkout_stamp = create_stamp_name(self.build_dir, self.url, "checkout")
+        checkout_stamp = create_stamp_name(self.git_dir, self.url, "checkout")
 
         # Do not checkout repos for the second time
         if checkout_stamp in _SEEN_REPOS:
