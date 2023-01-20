@@ -28,10 +28,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         construct_fetcher_dep_cmd(),
         "cd $build_dir",
         "$pull_ext_sources",
-        # Variable 'pull_ext_sources' always has "cd zephyr" appended,
-        # to avoid '&&  &&' if 'ext_files' are not provided.
-        # Other possible solution - to use 'true' command when 'ext_files' are absent.
-        # "cd zephyr",
+        "cd zephyr",
         "source zephyr-env.sh",
         "$env west build -p auto -b $board $target",
     ])
@@ -60,21 +57,26 @@ class ZephyrBuilder:
     def gen_build(self):
         """Generate Ninja rules to build Zephyr"""
 
-        script = []
+        list_of_commands = []
         ext_deps = []
         ext_files_node = self.conf.get("ext_files", None)
         if ext_files_node:
+            # if 'ext_files' node is present, then we:
+            # - collect filenames to `ext_deps` to add them to build dependencies
+            # - create destination directories, if required
+            # - copy external files to build-dir (or destination subdirectory, is specified)
             for dest_name, src_node in cast(YamlValue, ext_files_node).items():
-                src_name = os.path.relpath(src_node.as_str, self.build_dir)
                 ext_deps.append(src_node.as_str)
-                # create a-la "script" to copy external files to build-dir before start of build
-                # do we need to create destination subfolders?
+                rel_src_name = os.path.relpath(src_node.as_str, self.build_dir)
                 dst_path_and_name = os.path.split(dest_name)
                 if dst_path_and_name[0]:
-                    script.append(f"mkdir -p {dst_path_and_name[0]}")
-                script.append(f"cp {src_name} {dest_name}")
-        script.append("cd zephyr")
-        pull_ext_sources = " && ".join(script)
+                    list_of_commands.append(f"mkdir -p {dst_path_and_name[0]}")
+                list_of_commands.append(f"cp {rel_src_name} {dest_name}")
+        else:
+            # if 'ext_files' are not provided, we need to use 'true' to avoid
+            # '&&  &&' in 'gen_build_rules()' due to empty 'list_of_commands'
+            list_of_commands.append("true")
+        pull_ext_sources = " && ".join(list_of_commands)
 
         env_node = self.conf.get("env", None)
         if env_node:
