@@ -132,7 +132,7 @@ class YoctoBuilder:
             else:
                 path = val_node.as_str
             path = os.path.abspath(path)
-            ret.append((f"EXTERNALSRC_pn-{key}", path))
+            ret.append((f"EXTERNALSRC:pn-{key}", path))
 
         return ret
 
