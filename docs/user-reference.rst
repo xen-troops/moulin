@@ -442,7 +442,7 @@ needed if you are building multiple VMs with cross-dependencies.
 
 * :code:`external_src` - list of external sources for packages. This
   option will make `moulin` to generate
-  :code:`EXTERNALSRC_pn-{package}` in `local.conf`. This feature is
+  :code:`EXTERNALSRC:pn-{package}` in `local.conf`. This feature is
   used to provide Yocto build with artifacts that were built outside
   of the tree. Such artifacts can be provided by another component,
   for example.
