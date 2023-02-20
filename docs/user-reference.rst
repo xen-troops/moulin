@@ -570,6 +570,7 @@ to be fetched by `west` fetcher.
     type: zephyr
     board: xenvm
     target: samples/synchronization
+    work_dir: build_dir
     target_images:
       - "zephyr/build/zephyr/zephyr.bin"
     env:
@@ -597,6 +598,9 @@ Optional parameters:
 
 * :code:`env` - list of additional environment variables that should
   be exported before calling :code:`west build`.
+
+* :code:`work_dir` - build system's work directory. Default value is
+  "build". This is where files produced by build system are stored.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 
