@@ -538,7 +538,7 @@ as, `tar` is invoked with `--auto-compress` option.
 
   builder:
     type: archive        # Should be 'artchive'
-    name: "artifacts.tar.bz"
+    name: "artifacts.tar.bz2"
     items:
       - "yocto/build/tmp/deploy/images/generic-armv8-xt/Image"
       - "yocto/build/tmp/deploy/images/generic-armv8-xt/uInitramfs"
