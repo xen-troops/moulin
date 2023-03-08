@@ -236,17 +236,13 @@ class FileSystem(BlockEntry):
         files_node = self._node.get("files", None)
         if files_node:
             log.warn("Usage of 'files' is deprecated. Use 'items' please.")
-            for remote_node, local_node in cast(YamlValue, files_node).items():
-                remote_name = remote_node
-                local_name = local_node.as_str
-                self._items.append((remote_name, local_name, local_node.mark))
+            for remote_name, local_node in cast(YamlValue, files_node).items():
+                self._items.append((remote_name, local_node.as_str, local_node.mark))
 
         items_node = self._node.get("items", None)
         if items_node:
-            for remote_node, local_node in cast(YamlValue, items_node).items():
-                remote_name = remote_node
-                local_name = local_node.as_str
-                self._items.append((remote_name, local_name, local_node.mark))
+            for remote_name, local_node in cast(YamlValue, items_node).items():
+                self._items.append((remote_name, local_node.as_str, local_node.mark))
 
     def _complete_init(self):
         for _, local_name, local_mark in self._items:
