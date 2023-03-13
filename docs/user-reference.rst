@@ -575,6 +575,8 @@ to be fetched by `west` fetcher.
       - "zephyr/build/zephyr/zephyr.bin"
     env:
       - "MY_ENV_VAR=my_value"
+    additional_deps:  # Optional
+      - "path/to/file/generated/by/other/component"
 
 
 Mandatory options:
@@ -601,6 +603,14 @@ Optional parameters:
 
 * :code:`work_dir` - build system's work directory. Default value is
   "build". This is where files produced by build system are stored.
+
+* :code:`additional_deps` - list of additional dependencies. This is
+  basically :code:`target_images` produced by other components. You
+  can use those to implement build dependencies between
+  components. For example, if your system needs to have DomU's kernel
+  image in your zephyr image, you might want to add path to DomU's
+  kernel into :code:`additional_deps` of zephyr's config. This will
+  ensure that zephyr will be built **after** DomU.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 

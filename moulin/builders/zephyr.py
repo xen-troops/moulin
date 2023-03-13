@@ -73,6 +73,11 @@ class ZephyrBuilder:
         targets = self.get_targets()
         deps = list(self.src_stamps)
 
+        additional_deps_node = self.conf.get("additional_deps", None)
+
+        if additional_deps_node:
+            deps.extend([d.as_str for d in additional_deps_node])
+
         self.generator.build(targets, "zephyr_build", deps, variables=variables)
         self.generator.newline()
 
