@@ -569,6 +569,9 @@ to be fetched by `west` fetcher.
   builder:
     type: zephyr
     board: xenvm
+    shields:          # Optional
+      - "shield1"
+      - "shield2"
     target: samples/synchronization
     work_dir: build_dir
     target_images:
@@ -611,6 +614,8 @@ Optional parameters:
   image in your zephyr image, you might want to add path to DomU's
   kernel into :code:`additional_deps` of zephyr's config. This will
   ensure that zephyr will be built **after** DomU.
+
+* :code:`shields` - list of shields should be integrated to zephyr board.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 

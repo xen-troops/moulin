@@ -28,7 +28,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         construct_fetcher_dep_cmd(),
         "cd $build_dir",
         "source zephyr/zephyr-env.sh",
-        "$env west build -p auto -b $board -d $work_dir $target",
+        "$env west build -p auto -b $board -d $work_dir $target $shields",
     ])
     generator.rule("zephyr_build",
                    command=f'bash -c "{cmd}"',
@@ -62,12 +62,20 @@ class ZephyrBuilder:
             env_values = []
         env = " ".join(env_values)
 
+        shields_node = self.conf.get("shields", None)
+        if shields_node:
+            shields_vals = [x.as_str for x in shields_node]
+            shields = f'-DSHIELD=\\"{" ".join(shields_vals)}\\"'
+        else:
+            shields = ""
+
         variables = {
             "name": self.name,
             "build_dir": self.build_dir,
             "board": self.conf["board"].as_str,
             "target": self.conf["target"].as_str,
             "work_dir": self.conf.get("work_dir", "zephyr/build").as_str,
+            "shields": shields,
             "env": env,
         }
         targets = self.get_targets()
