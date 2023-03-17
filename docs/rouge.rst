@@ -267,6 +267,7 @@ partitions, where you store kernel, initial ramdisk and so on.
      "remote_file2": "path/to/local/file2"
      "remote_file3": "path/to/local/file3"
      "remote_file4": "path/to/local/file4"
+     "remote_dir": "path/to/local/directory/"
 
 :code:`type` is required. Defines the filesystem type,
 currently `ext4` and `vfat` are supported.
@@ -277,8 +278,12 @@ filesystem. :code:`remote` part is how the file will be named on new
 filesystem, while :code:`local` is a path on your disk.
 You can specify parent folders for :code:`remote` and these folders
 will be created on the destination filesystem.
+You may specify not only files but directories also. If the local
+directory contains subdirectories, they will be created unders the
+:code:`remote` directory.
 Older versions of `rouge` used :code:`files:` as the name of the
 section. This name is still possible to use, but it is deprecated.
+Also only :code:`items:` can contain directories.
 
 :code:`size` is optional. `rouge` will calculate total file size and
 add some space for the filesystem metadata to determine block size.
