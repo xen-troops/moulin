@@ -529,7 +529,7 @@ Optional parameters:
 archive builder
 ^^^^^^^^^^^^^^^
 
-Archive builder does is intended to create archive from other components.
+Archive builder is intended to create an archive from other components.
 It can be used to gather build artifacts, for example. This builder
 uses `tar` to create archive files. Archives can be optionally compressed
 as, `tar` is invoked with `--auto-compress` option.
@@ -537,7 +537,7 @@ as, `tar` is invoked with `--auto-compress` option.
 .. code-block:: yaml
 
   builder:
-    type: archive        # Should be 'artchive'
+    type: archive        # Should be 'archive'
     name: "artifacts.tar.bz2"
     items:
       - "yocto/build/tmp/deploy/images/generic-armv8-xt/Image"
@@ -545,16 +545,16 @@ as, `tar` is invoked with `--auto-compress` option.
 
 Mandatory options:
 
-* :code:`type` - Builder type. Should be :code:`archive` for this type
+* :code:`type` - Builder type. It should be :code:`archive` for this type
   of builder.
 
-* :code:`name` - Name of archive file. Add suffix like `tar.bz2` to
+* :code:`name` - Name of an archive file. Add a suffix like `tar.bz2` to
   make `tar` compress archive with desired compressing algorithm.
 
 * :code:`items` - list of files or directories that should be added
-  do the archive. Please ensure that those files or directories present
+  to the archive. Please ensure that those files or directories are present
   in other components :code:`target_images` sections, so Ninja can
-  build correct dependencies. All paths are relative to base build
+  build correct dependencies. All paths are relative to the base build
   directory (where .yaml file resides).
 
 zephyr builder
