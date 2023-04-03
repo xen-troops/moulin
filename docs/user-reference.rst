@@ -539,9 +539,11 @@ as, `tar` is invoked with `--auto-compress` option.
   builder:
     type: archive        # Should be 'archive'
     name: "artifacts.tar.bz2"
+    base_dir: "yocto/build/tmp/deploy/images/"
     items:
-      - "yocto/build/tmp/deploy/images/generic-armv8-xt/Image"
-      - "yocto/build/tmp/deploy/images/generic-armv8-xt/uInitramfs"
+      # items are relative to base_dir
+      - "generic-armv8-xt/Image"
+      - "generic-armv8-xt/uInitramfs"
 
 Mandatory options:
 
@@ -551,11 +553,17 @@ Mandatory options:
 * :code:`name` - Name of an archive file. Add a suffix like `tar.bz2` to
   make `tar` compress archive with desired compressing algorithm.
 
+* :code:`base_dir` - Optional parameter specifying `tar`'s base directory.
+  The default value is "." if not specified. This is passed to `tar` as
+  `-C` option. As result, the final archive will contain paths relative
+  to :code:`base_dir`. Avoid using `..` because specified items will be
+  archived by `tar` but all `..` will be stripped. As a result, the archive
+  will contain items with unexpected paths.
+
 * :code:`items` - list of files or directories that should be added
   to the archive. Please ensure that those files or directories are present
   in other components :code:`target_images` sections, so Ninja can
-  build correct dependencies. All paths are relative to the base build
-  directory (where .yaml file resides).
+  build correct dependencies. All paths are relative to the :code:`base_dir`.
 
 zephyr builder
 ^^^^^^^^^^^^^^

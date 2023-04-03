@@ -24,7 +24,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     """
 
     generator.rule("tar_pack",
-                   "tar --sparse --dereference --create --auto-compress --file=$out $items",
+                   "tar --sparse --dereference --create --auto-compress -C $base_dir --file=$out $items",
                    description="Archiving into $out",
                    restat=True)
     generator.newline()
@@ -45,13 +45,21 @@ class ArchiveBuilder:
 
     def gen_build(self):
         """Generate ninja rules to create archive"""
-        items = [x.as_str for x in self.conf["items"]]
+        items_for_tar = [x.as_str for x in self.conf["items"]]
+        base_dir = self.conf.get("base_dir", ".").as_str
+        # Items are intended to be used by tar, and contains path
+        # relative to `base_dir`. But to provide correct dependencies
+        # for Ninja we need to use path relative to `build-dir`.
+        items_for_ninja = [os.path.join(base_dir, x) for x in items_for_tar]
 
         targets = self.get_targets()
         deps = list(self.src_stamps)
-        deps.extend(items)
+        deps.extend(items_for_ninja)
 
-        self.generator.build(targets, "tar_pack", deps, variables={"items": items})
+        self.generator.build(targets, "tar_pack", deps, variables={
+            "items": items_for_tar,
+            "base_dir": base_dir
+            })
         self.generator.newline()
 
         return targets
