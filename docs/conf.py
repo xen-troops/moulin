@@ -21,7 +21,7 @@ copyright = '2021-2023, EPAM Systems'
 author = 'EPAM Systems'
 
 # The full version, including alpha/beta/rc tags
-release = 'v0.15'
+release = 'v0.16'
 
 # -- General configuration ---------------------------------------------------
 
