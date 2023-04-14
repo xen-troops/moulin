@@ -584,6 +584,8 @@ to be fetched by `west` fetcher.
     work_dir: build_dir
     target_images:
       - "zephyr/build/zephyr/zephyr.bin"
+    vars:
+      - "VAR1=var1_value"
     env:
       - "MY_ENV_VAR=my_value"
     additional_deps:  # Optional
@@ -624,6 +626,9 @@ Optional parameters:
   ensure that zephyr will be built **after** DomU.
 
 * :code:`shields` - list of shields should be integrated to zephyr board.
+
+* :code:`vars` - list of additional variables that should be passed to cmakw
+  via :code:`west build`.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 
