@@ -14,7 +14,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from typing import Optional
 from yaml import Mark
-from moulin.rouge import sfdisk, ext_utils
+from moulin.rouge import gpti, ext_utils
 from moulin.yaml_helpers import YAMLProcessingError
 from moulin.yaml_wrapper import YamlValue
 
@@ -89,20 +89,13 @@ class GPT(BlockEntry):
 
     def _complete_init(self):
         partitions = [x._replace(size=x.entry.size()) for x in self._partitions]
-        self._partitions, self._size = sfdisk.fixup_partition_table(partitions)
+        self._partitions, self._size = gpti.fixup_partition_table(partitions)
 
     def write(self, fp, offset):
         if not self._size:
             self._complete_init()
-        if offset == 0:
-            sfdisk.write(fp, self._partitions)
-        else:
-            # Write partition into temporary file, then copy it into
-            # resulting file
-            with NamedTemporaryFile("wb") as tempf:
-                tempf.truncate(self._size)
-                sfdisk.write(tempf, self._partitions)
-                ext_utils.dd(tempf, fp, offset)
+
+        gpti.write(fp, self._partitions, offset, self._size)
 
         for part in self._partitions:
             part.entry.write(fp, part.start + offset)
