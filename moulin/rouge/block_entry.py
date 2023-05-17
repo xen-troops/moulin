@@ -50,11 +50,14 @@ class GPT(BlockEntry):
     def __init__(self, node: YamlValue):
         self._partitions: List[GPTPartition] = []
         self._size: int = 0
+        self._sector_size: int = 512
         self._requested_image_size: Optional[int] = None
 
         _requested_image_size_node = node.get("image_size", None)
         if _requested_image_size_node:
             self._requested_image_size = _parse_size(_requested_image_size_node)
+
+        self._sector_size = node.get("sector_size", 512).as_int
 
         for part_id, part in node["partitions"].items():
             label = part_id
@@ -89,13 +92,13 @@ class GPT(BlockEntry):
 
     def _complete_init(self):
         partitions = [x._replace(size=x.entry.size()) for x in self._partitions]
-        self._partitions, self._size = gpti.fixup_partition_table(partitions)
+        self._partitions, self._size = gpti.fixup_partition_table(partitions, self._sector_size)
 
     def write(self, fp, offset):
         if not self._size:
             self._complete_init()
 
-        gpti.write(fp, self._partitions, offset, self._size)
+        gpti.write(fp, self._partitions, offset, self._size, self._sector_size)
 
         for part in self._partitions:
             part.entry.write(fp, part.start + offset)

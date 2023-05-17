@@ -336,6 +336,10 @@ because, accoding to the page 121 of
 the software that makes copied of GPT-formatted disks and partitions must generate
 new Unique Partition GUID in each GPT Partition Entry.
 
+:code:`sector_size` is a custom sector size, 512 by default, but some devices
+(e.g. fancy flash storage) might have a sector of different size.
+This key allows tuning for such cases.
+
 `rouge` will place partitions one after another, aligning partition
 start to 1 MiB (as per standard recommendation) and partition size to
 sector size, which defaults to 512 bytes.
