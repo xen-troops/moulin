@@ -28,6 +28,7 @@ SETUP_ARGS: Dict[str, Any] = dict(
         'importlib_metadata',
         'packaging',
         'pyaml',
+        'gpt-image',
     ],
     python_requires=">=3.6",
     entry_points={
