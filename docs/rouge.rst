@@ -32,7 +32,6 @@ them are available on every system, except Android tools that usually
 should be installed separately. There is a list:
 
  - `dd` - used to copy raw images
- - `sfdisk` - creates GPT
  - `mkfs.ext4` - creates ext4 FS
  - `mkfs.vfat` - creates vfat FS
  - `simg2img` - used to unpack Android sparse image files
