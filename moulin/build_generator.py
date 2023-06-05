@@ -5,6 +5,7 @@ This module takes processed YAML config tree (with variables expanded
 and parameters applied) and produces Ninja build file
 """
 
+from os import remove
 import os.path
 import sys
 from typing import Optional, List
@@ -50,7 +51,16 @@ def generate_build(conf: MoulinConfiguration,
                 source_type = source["type"].as_str
                 fetcher_module = fetcher_modules[source_type]
                 fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
-                fetcher_stamps = fetcher.gen_fetch()
+                try:
+                    fetcher_stamps = fetcher.gen_fetch()
+                except Exception:
+                    generator.close()
+                    # file is not usable
+                    remove(ninja_build_fname)
+                    # Raise an exception to delegate the decision
+                    # at the higher lever
+                    raise
+
                 if isinstance(fetcher_stamps, list):
                     source_stamps.extend(fetcher_stamps)
                 else:

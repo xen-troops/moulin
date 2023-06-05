@@ -10,7 +10,10 @@ from moulin.main import moulin_entry
 
 
 def main():
-    moulin_entry()
+    try:
+        moulin_entry()
+    except Exception as err:
+        print(err)
 
 
 if __name__ == "__main__":

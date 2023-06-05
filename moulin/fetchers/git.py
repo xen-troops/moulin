@@ -44,7 +44,7 @@ def _guess_dirname(url: str):
     return url.split("/")[-1]
 
 
-_SEEN_REPOS = []
+_SEEN_REPOS_REV = {}
 
 
 class GitFetcher:
@@ -64,10 +64,15 @@ class GitFetcher:
         checkout_stamp = create_stamp_name(self.build_dir, self.url, "checkout")
 
         # Do not checkout repos for the second time
-        if checkout_stamp in _SEEN_REPOS:
-            return checkout_stamp
+        if checkout_stamp in _SEEN_REPOS_REV:
+            if self.git_rev != _SEEN_REPOS_REV[checkout_stamp]:
+                raise Exception(f"ERROR: Repository {self.url} has two\
+ revisions '{self.git_rev}' and '{_SEEN_REPOS_REV[checkout_stamp]}'")
+            else:
+                return checkout_stamp
 
-        _SEEN_REPOS.append(checkout_stamp)
+        _SEEN_REPOS_REV[checkout_stamp] = self.git_rev
+
         self.generator.build(clone_target,
                              "git_clone",
                              variables={
