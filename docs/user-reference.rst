@@ -447,6 +447,59 @@ needed if you are building multiple VMs with cross-dependencies.
   of the tree. Such artifacts can be provided by another component,
   for example.
 
+bazel builder
+^^^^^^^^^^^^^
+
+Bazel builder is used to build projects based on the Bazel build system
+provided by Google. It expects that a project with source and bazel
+configuration files is present in the build directory.
+
+.. code-block:: yaml
+
+  builder:
+    type: "bazel"         # Mandatory and must be `bazel`
+    tool: "tools/bazel"   # Optional
+    startup-options:      # Optional
+      - "--max_idle_secs=1"
+    command: run          # Optional
+    args:                 # Optional
+      - "--verbose_failures"
+      - "--sandbox_debug"
+    target:               # Mandatory
+    target-patterns:      # Optional
+      - "--dist_dir=path_to_dist"
+    target_images:        # Mandatory
+      - "out/deploy/virtual-device/virtual_device_aarch64/Image"
+      - "out/deploy/virtual-device/virtual_device_aarch64/initramfs.img"
+
+Mandatory parameters:
+
+* :code:`type` - Builder type. It must be :code:`bazel` for this type
+  of builder.
+
+* :code:`target` - target name that should be described in the
+  corresponding BUILD.bazel file and must satisfy bazel rules.
+
+* :code:`target_images` - list of artifact files that should be generated
+  by this component as a result of the build.
+  Every component should generate at least one image file.
+
+Optional parameters:
+
+* :code:`tool` - the relative path to the Bazel tool in relation to the
+  'build-dir'. If this parameter is not defined, the system-installed
+  Bazel tool will be used.
+
+* :code:`startup-options` - bazel startup options that appear before
+  the command and are parsed by the client.
+
+* :code:`command` - bazel command. By default, :code:`build` is used.
+
+* :code:`args` - bazel arguments related to the concrete :code:`command`.
+
+* :code:`target-patterns` - bazel target patterns to be built or
+  parameters to executable target.
+
 android builder
 ^^^^^^^^^^^^^^^
 
