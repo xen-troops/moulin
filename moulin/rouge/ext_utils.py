@@ -69,9 +69,12 @@ def mkext4fs(file_out: BinaryIO, contents_dir=None):
     _run_cmd(args)
 
 
-def mkvfatfs(file_out: BinaryIO):
-    "Create ext4 fs in given file"
-    args = ["mkfs.vfat", file_out.name]
+def mkvfatfs(file_out: BinaryIO, sector_size=None):
+    "Create FAT fs in given file"
+    args = ["mkfs.vfat"]
+    if sector_size:
+        args.append(f"-S {sector_size}")
+    args.append(file_out.name)
 
     _run_cmd(args)
 

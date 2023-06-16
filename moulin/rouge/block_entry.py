@@ -47,7 +47,7 @@ class GPTPartition(NamedTuple):
 class GPT(BlockEntry):
     "Represents GUID Partition Table"
 
-    def __init__(self, node: YamlValue):
+    def __init__(self, node: YamlValue, **kwargs):
         self._partitions: List[GPTPartition] = []
         self._size: int = 0
         self._sector_size: int = 512
@@ -61,7 +61,7 @@ class GPT(BlockEntry):
 
         for part_id, part in node["partitions"].items():
             label = part_id
-            entry_obj, gpt_type, gpt_guid = self._process_entry(part)
+            entry_obj, gpt_type, gpt_guid = self._process_entry(part, sector_size=self._sector_size)
             self._partitions.append(GPTPartition(label, gpt_type, gpt_guid, start=0, size=0, entry=entry_obj))
 
     def size(self) -> int:
@@ -79,8 +79,8 @@ class GPT(BlockEntry):
         return self._size
 
     @staticmethod
-    def _process_entry(node: YamlValue):
-        entry_obj = construct_entry(node)
+    def _process_entry(node: YamlValue, **kwargs):
+        entry_obj = construct_entry(node, **kwargs)
         gpt_type = node.get("gpt_type", "").as_str
         if not gpt_type:
             log.warning("No GPT type is provided %s, using default", node.mark)
@@ -112,7 +112,7 @@ class GPT(BlockEntry):
 class RawImage(BlockEntry):
     "Represents raw image file which needs to be copied as is"
 
-    def __init__(self, node: YamlValue):
+    def __init__(self, node: YamlValue, **kwargs):
         self._node = node
         self._fname = self._node["image_path"].as_str
         self._size = 0
@@ -151,7 +151,7 @@ class RawImage(BlockEntry):
 class AndroidSparse(BlockEntry):
     "Represents android sparse image file"
 
-    def __init__(self, node: YamlValue):
+    def __init__(self, node: YamlValue, **kwargs):
         self._node = node
         self._fname = self._node["image_path"].as_str
         self._size = 0
@@ -208,7 +208,7 @@ class AndroidSparse(BlockEntry):
 class EmptyEntry(BlockEntry):
     "Represents empty partition"
 
-    def __init__(self, node: YamlValue):
+    def __init__(self, node: YamlValue, **kwargs):
         self._size = _parse_size(node["size"])
         self._fill_by_zero = (node.get("filled", "").as_str == "zeroes")
 
@@ -224,7 +224,7 @@ class EmptyEntry(BlockEntry):
 class FileSystem(BlockEntry):
     "Represents a filesystem with list of files"
 
-    def __init__(self, node: YamlValue):
+    def __init__(self, node: YamlValue, **kwargs):
         self._node = node
         self._size = 0
         self._items: List[Tuple[str, str, Mark]] = []
@@ -313,6 +313,10 @@ class Ext4(FileSystem):
 class Vfat(FileSystem):
     "Represents vfat fs with list of files"
 
+    def __init__(self, node: YamlValue, **kwargs):
+        super(Vfat, self).__init__(node, **kwargs)
+        self._sector_size = kwargs.get('sector_size')
+
     def unwrap_dirs(self):
         "Return list of files with flatten content of the directories"
         out_list: List[Tuple[str, str, Mark]] = []
@@ -336,7 +340,7 @@ class Vfat(FileSystem):
             self._complete_init()
         with NamedTemporaryFile() as tempf:
             tempf.truncate(self._size)
-            ext_utils.mkvfatfs(tempf)
+            ext_utils.mkvfatfs(tempf, self._sector_size)
             # for vfat we have to create each subdir (if any) and copy file one by one
             # that's why we need to 'unwrap' content of any input directory
             self._items = self.unwrap_dirs()
@@ -384,13 +388,13 @@ _ENTRY_TYPES = {
 }
 
 
-def construct_entry(node: YamlValue) -> BlockEntry:
+def construct_entry(node: YamlValue, **kwargs) -> BlockEntry:
     "Construct BlockEntry object from YAML node"
     entry_type = node["type"]
     if entry_type.as_str not in _ENTRY_TYPES:
         raise YAMLProcessingError(f"Unknown type '{entry_type.as_str}'", entry_type.mark)
 
-    return _ENTRY_TYPES[entry_type.as_str](node)
+    return _ENTRY_TYPES[entry_type.as_str](node, **kwargs)
 
 
 _SUFFIXES = {
