@@ -73,7 +73,8 @@ def mkvfatfs(file_out: BinaryIO, sector_size=None):
     "Create FAT fs in given file"
     args = ["mkfs.vfat"]
     if sector_size:
-        args.append(f"-S {sector_size}")
+        args.append("-S")
+        args.append(str(sector_size))
     args.append(file_out.name)
 
     _run_cmd(args)
