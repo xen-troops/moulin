@@ -38,6 +38,8 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     generator.newline()
     generator.rule("gzip", "gzip -1kf $in")
     generator.newline()
+    generator.rule("lzma", "xz -1kf $in")
+    generator.newline()
     generator.rule("bmaptool", "bmaptool create $in -o $out")
     generator.newline()
 
@@ -53,6 +55,10 @@ def gen_build(generator: ninja_syntax.Writer, images: List[RougeImage]):
                         pool="console")
         generator.build(f"{image.name}.img.gz",
                         "gzip",
+                        f"{image.name}.img",
+                        pool="console")
+        generator.build(f"{image.name}.img.xz",
+                        "lzma",
                         f"{image.name}.img",
                         pool="console")
         generator.build(f"{image.name}.img.bmap",
