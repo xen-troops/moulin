@@ -8,6 +8,7 @@ import os.path
 from typing import List
 from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
+from moulin import utils
 
 
 def get_builder(conf: YamlValue, name: str, build_dir: str, src_stamps: List[str],
@@ -55,6 +56,9 @@ class AndroidKernel:
         else:
             env_values = []
         env = " ".join(env_values)
+
+        env = utils.escape(env)
+
         variables = {
             "build_dir": self.build_dir,
             "env": env,

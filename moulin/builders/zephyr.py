@@ -9,6 +9,7 @@ from typing import List
 from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
 from moulin.utils import construct_fetcher_dep_cmd
+from moulin import utils
 
 
 def get_builder(conf: YamlValue, name: str, build_dir: str, src_stamps: List[str],
@@ -61,6 +62,8 @@ class ZephyrBuilder:
         else:
             env_values = []
         env = " ".join(env_values)
+
+        env = utils.escape(env)
 
         shields_node = self.conf.get("shields", None)
         if shields_node:
