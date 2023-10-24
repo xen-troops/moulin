@@ -38,8 +38,7 @@ class ParameterVariant:
 
     @staticmethod
     def _override(remote_node: Node, local_node: Node):
-        # pylint: disable=unidiomatic-typecheck
-        if type(remote_node) != type(local_node):
+        if type(remote_node) is not type(local_node):
             raise YAMLProcessingError(
                 f"Incompatible types {type(remote_node)} and " +
                 f" {type(local_node)} while trying to apply overrides", local_node.start_mark)
