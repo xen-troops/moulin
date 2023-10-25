@@ -18,14 +18,21 @@ def get_fetcher(conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer)
 
 def gen_build_rules(generator: ninja_syntax.Writer):
     """Generate build rules using Ninja generator"""
-    # If $git_url uses ssh protocol and is not in .ssh/known_hosts,
-    # the ssh client starts to iterate with a user.
-    # But this interaction is not visible and
-    # looks just like the ninja hung on some operation.
-    # So we have to use ssh in BatchMode to throw
-    # an error instead of asking invisible questions.
+    # We use git with the console which is hidden from the user.
+    # That's why we need to disable any interaction with the user.
+    # Here we address two cases:
+    #
+    # SSH access to unknown host results in SSH asking confirmation
+    # from the user, so we use `GIT_SSH_COMMAND='ssh -o BatchMode=yes'`
+    # to inform user to add host manually.
+    #
+    # HTTPS access to private repo results in git asking for
+    # username/password. So we use `GIT_TERMINAL_PROMPT=0`
+    # to abort fetching and inform user, that may be other way should
+    # be used, like ssh.
     generator.rule("git_clone",
                    command="GIT_SSH_COMMAND='ssh -o BatchMode=yes' "
+                           "GIT_TERMINAL_PROMPT=0 "
                            "git clone -q $git_url $git_dir && touch $out",
                    description="git clone")
     generator.newline()
