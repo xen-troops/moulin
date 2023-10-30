@@ -5,6 +5,7 @@
 import os.path
 from typing import List
 import pygit2
+from moulin.yaml_helpers import YAMLProcessingError
 from moulin.yaml_wrapper import YamlValue
 from moulin.utils import create_stamp_name
 from moulin import ninja_syntax
@@ -44,7 +45,7 @@ def _guess_dirname(url: str):
     return url.split("/")[-1]
 
 
-_SEEN_REPOS = []
+_SEEN_REPOS_REV = {}
 
 
 class GitFetcher:
@@ -63,11 +64,17 @@ class GitFetcher:
         clone_target = self.git_dir
         checkout_stamp = create_stamp_name(self.build_dir, self.url, "checkout")
 
-        # Do not checkout repos for the second time
-        if checkout_stamp in _SEEN_REPOS:
-            return checkout_stamp
+        if checkout_stamp in _SEEN_REPOS_REV:
+            if self.git_rev != _SEEN_REPOS_REV[checkout_stamp]:
+                # Fail on occurrence of different revision for the already downloaded repository
+                raise YAMLProcessingError(f"ERROR: Repository {self.url} has two revisions '{self.git_rev}' "
+                                          f"and '{_SEEN_REPOS_REV[checkout_stamp]}'", self.conf["rev"].mark)
+            else:
+                # Do not checkout repos for the second time
+                return checkout_stamp
 
-        _SEEN_REPOS.append(checkout_stamp)
+        _SEEN_REPOS_REV[checkout_stamp] = self.git_rev
+
         self.generator.build(clone_target,
                              "git_clone",
                              variables={
