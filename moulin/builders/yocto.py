@@ -93,7 +93,7 @@ def _flatten_yocto_conf(conf: YamlValue) -> List[Tuple[str, str]]:
     result: List[Tuple[str, str]] = []
     for entry in conf:
         if not entry.is_list:
-            raise YAMLProcessingError("Exptected array on 'conf' node", entry.mark)
+            raise YAMLProcessingError("Expected array on 'conf' node", entry.mark)
         if entry[0].is_list:
             result.extend([(x[0].as_str, x[1].as_str) for x in entry])
         else:
