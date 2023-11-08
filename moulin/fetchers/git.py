@@ -69,6 +69,7 @@ class GitFetcher:
     def gen_fetch(self):
         """Generate instruction to fetch git repo"""
         clone_target = self.git_dir
+        clone_stamp = create_stamp_name(self.build_dir, self.url, "clone")
         checkout_stamp = create_stamp_name(self.build_dir, self.url, "checkout")
 
         if checkout_stamp in _SEEN_REPOS_REV:
@@ -82,7 +83,7 @@ class GitFetcher:
 
         _SEEN_REPOS_REV[checkout_stamp] = self.git_rev
 
-        self.generator.build(clone_target,
+        self.generator.build([clone_target, clone_stamp],
                              "git_clone",
                              variables={
                                  "git_url": self.url,
@@ -91,7 +92,7 @@ class GitFetcher:
         self.generator.newline()
         self.generator.build(checkout_stamp,
                              "git_checkout",
-                             clone_target,
+                             clone_stamp,
                              variables={
                                  "git_rev": self.git_rev,
                                  "git_dir": self.git_dir
