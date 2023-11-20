@@ -69,8 +69,8 @@ class GitFetcher:
     def gen_fetch(self):
         """Generate instruction to fetch git repo"""
         clone_target = self.git_dir
-        clone_stamp = create_stamp_name(self.build_dir, self.url, "clone")
-        checkout_stamp = create_stamp_name(self.build_dir, self.url, "checkout")
+        clone_stamp = create_stamp_name(self.build_dir, clone_target, self.url, "clone")
+        checkout_stamp = create_stamp_name(self.build_dir, clone_target, self.url, "checkout")
 
         if checkout_stamp in _SEEN_REPOS_REV:
             if self.git_rev != _SEEN_REPOS_REV[checkout_stamp]:
