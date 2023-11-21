@@ -75,7 +75,8 @@ class GitFetcher:
         if checkout_stamp in _SEEN_REPOS_REV:
             if self.git_rev != _SEEN_REPOS_REV[checkout_stamp]:
                 # Fail on occurrence of different revision for the already downloaded repository
-                raise YAMLProcessingError(f"ERROR: Repository {self.url} has two revisions '{self.git_rev}' "
+                raise YAMLProcessingError(f"ERROR: Repository {self.url} cloned to '{clone_target}' "
+                                          f"has two revisions '{self.git_rev}' "
                                           f"and '{_SEEN_REPOS_REV[checkout_stamp]}'", self.conf["rev"].mark)
             else:
                 # Do not checkout repos for the second time
