@@ -643,6 +643,15 @@ to be fetched by `west` fetcher.
       - "MY_ENV_VAR=my_value"
     additional_deps:  # Optional
       - "path/to/file/generated/by/other/component"
+    ext_files:
+      # copy 'file_1' to the root of the zephyr's build dir
+      "file_1": "path/to/external/file_1"
+      # copy 'file_2' to the 'abc' directory under the root of the zephyr's build dir
+      # and rename it to the file_BB
+      "abc/file_BB": "path/to/external/file_2"
+      # copy 'file_3' to the 'abc' directory under the root of the zephyr's build dir
+      # with the same name 'file_3'
+      "abc/": "path/to/external/file_3"
 
 
 Mandatory options:
@@ -682,6 +691,13 @@ Optional parameters:
 
 * :code:`vars` - list of additional variables that should be passed to cmakw
   via :code:`west build`.
+
+* :code:`ext_files` - defines :code:`destination_name:path_to_source_file`
+  mapping of external files that need to be collected before calling
+  :code:`west build`. The destination is specified relative to zephyr's
+  :code:`build-dir`, and can include subdirectories. If the destination
+  path is specified then it will be created. You can rename the source
+  file by providing its new name in the destination part.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 

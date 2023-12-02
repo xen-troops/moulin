@@ -5,7 +5,7 @@ Zephyr build generator
 """
 
 import os.path
-from typing import List
+from typing import List, cast
 from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
 from moulin.utils import construct_fetcher_dep_cmd
@@ -28,6 +28,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         # Generate fetcher dependency file
         construct_fetcher_dep_cmd(),
         "cd $build_dir",
+        "$pull_ext_sources",
         "source zephyr/zephyr-env.sh",
         "$env west build -p auto -b $board -d $work_dir $target -- $shields $vars",
     ])
@@ -55,6 +56,27 @@ class ZephyrBuilder:
 
     def gen_build(self):
         """Generate Ninja rules to build Zephyr"""
+
+        list_of_commands = []
+        ext_deps = []
+        ext_files_node = self.conf.get("ext_files", None)
+        if ext_files_node:
+            # if 'ext_files' node is present, then we:
+            # - collect filenames to `ext_deps` to add them to build dependencies
+            # - create destination directories, if required
+            # - copy external files to build-dir (or destination subdirectory, is specified)
+            for dest_name, src_node in cast(YamlValue, ext_files_node).items():
+                ext_deps.append(src_node.as_str)
+                rel_src_name = os.path.relpath(src_node.as_str, self.build_dir)
+                dst_path_and_name = os.path.split(dest_name)
+                if dst_path_and_name[0]:
+                    list_of_commands.append(f"mkdir -p {dst_path_and_name[0]}")
+                list_of_commands.append(f"cp {rel_src_name} {dest_name}")
+        else:
+            # if 'ext_files' are not provided, we need to use 'true' to avoid
+            # '&&  &&' in 'gen_build_rules()' due to empty 'list_of_commands'
+            list_of_commands.append("true")
+        pull_ext_sources = " && ".join(list_of_commands)
 
         env_node = self.conf.get("env", None)
         if env_node:
@@ -88,9 +110,14 @@ class ZephyrBuilder:
             "shields": shields,
             "vars": vars_value,
             "env": env,
+            "pull_ext_sources": pull_ext_sources,
         }
         targets = self.get_targets()
         deps = list(self.src_stamps)
+
+        # we add 'ext_files' to dependencies, so ninja will be able
+        # to start required tasks
+        deps += ext_deps
 
         additional_deps_node = self.conf.get("additional_deps", None)
 
