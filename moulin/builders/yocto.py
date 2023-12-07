@@ -11,6 +11,11 @@ from moulin.utils import create_stamp_name, construct_fetcher_dep_cmd
 from moulin import ninja_syntax
 from moulin.yaml_wrapper import YamlValue
 from moulin.yaml_helpers import YAMLProcessingError
+import logging
+
+
+YOCTO_CORE_LAYERS = ["../poky/meta", "../poky/meta-poky", "../poky/meta-yocto-bsp"]
+log = logging.getLogger(__name__)
 
 
 def get_builder(conf: YamlValue, name: str, build_dir: str, src_stamps: List[str],
@@ -142,6 +147,43 @@ Example:
     return result
 
 
+def _filter_yocto_core_layers(layers: List[str]) -> List[str]:
+    """
+By default, Poky adds the following layers:
+
+"meta"
+"meta-poky"
+"meta-yocto-bsp"
+
+For more details, you can find information about it here:
+https://github.com/yoctoproject/poky/blob/807831067405a465886593df4e3057d3846a0001/documentation/
+migration-guides/migration-1.3.rst#bblayersconf
+and here:
+poky/meta-poky/conf/bblayers.conf.sample
+
+This function checks the list of layers in your Yaml configuration. If it finds Poky default layers,
+it outputs a corresponding warning to the user. Such layers will be removed from the final list since
+Poky adds them by default on its level.
+
+Please, be aware, that the warning in this function will be changed to an exception soon. Please, adapt
+your YAML Moulin configuration files.
+
+    Args:
+    - _layers (List[str]): A list of layers to filter.
+
+    Returns:
+    - List[str]: A filtered list of layers without the ones added by the Poky by default.
+"""
+    result: List[str] = []
+    for layer in layers:
+        if layer in YOCTO_CORE_LAYERS:
+            log.warning("You explicitly specified the %s layer. This layer is the default layer in Poky."
+                        " Please, remove this layer from your YAML configuration.", layer)
+        else:
+            result.append(layer)
+    return result
+
+
 class YoctoBuilder:
     """
     YoctoBuilder class generates Ninja rules for given build configuration
@@ -196,7 +238,7 @@ class YoctoBuilder:
         layers_stamp = None
         if layers_node:
             layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
-            layers = " ".join(_flatten_layers(layers_node))
+            layers = " ".join(_filter_yocto_core_layers(_flatten_layers(layers_node)))
             self.generator.build(layers_stamp,
                                  "yocto_add_layers",
                                  env_target,
