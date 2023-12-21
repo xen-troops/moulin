@@ -1,0 +1,41 @@
+desc: "Integration test Poky default layers case"
+min_ver: "0.20"
+
+
+variables:
+  YOCTOS_WORK_DIR: "yocto"
+
+components:
+  domd:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      - type: git
+        url: "https://github.com/xen-troops/meta-example.git"
+        rev: ABCDEF
+        dir: "dir1"
+    builder:
+      type: yocto
+      build_target: core-image-weston
+      target_images:
+        - "image_1_for_doma"
+        - "image_2_for_doma"
+      lunch_target: "target_for_doma"
+      layers:
+        - "../poky/meta"
+        - "../poky/meta-poky"
+        - "../poky/meta-yocto-bsp"
+
+  domu:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      - type: git
+        url: "https://github.com/xen-troops/meta-example.git"
+        rev: ABCDEF
+        dir: "dir1"
+    builder:
+      type: yocto
+      build_target: core-image-weston
+      target_images:
+        - "image_1_for_domu"
+        - "image_2_for_domu"
+      lunch_target: "target_for_domu"
