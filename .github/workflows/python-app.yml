@@ -22,6 +22,8 @@ jobs:
         pip3 install flake8 pytest pyaml
         # Needed by pygit package
         sudo apt-get install python3-pygit2
+        # Needed by moulin integration tests
+        sudo apt-get install ninja-build
         # Install other dependencies from setup.py
         pip3 install .
     - name: Lint with flake8
