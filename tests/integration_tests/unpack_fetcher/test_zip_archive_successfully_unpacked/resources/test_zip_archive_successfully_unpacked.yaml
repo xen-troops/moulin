@@ -1,0 +1,12 @@
+desc: "Test zip archive successfully unpacked"
+min_ver: "0.20"
+
+
+components:
+  test:
+    builder:
+      type: "null"
+    sources:
+      - type: unpack
+        file: test.zip
+        archive_type: zip

@@ -1,0 +1,12 @@
+desc: "Test tar archive successfully unpacked"
+min_ver: "0.20"
+
+
+components:
+  test:
+    builder:
+      type: "null"
+    sources:
+      - type: unpack
+        file: test.tar.gz
+        archive_type: tar
