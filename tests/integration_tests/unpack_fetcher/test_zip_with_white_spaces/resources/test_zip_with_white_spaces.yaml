@@ -1,0 +1,30 @@
+desc: "Test zip with white spaces"
+min_ver: "0.20"
+
+
+components:
+  test_1:
+    builder:
+      type: "null"
+    sources:
+      - type: unpack
+        file: test.zip
+        dir: subdir_1
+        archive_type: zip
+      - type: unpack
+        file: test.zip
+        dir: subdir_2
+        archive_type: zip
+
+  test_2:
+    builder:
+      type: "null"
+    sources:
+      - type: unpack
+        file: test.zip
+        dir: subdir_1
+        archive_type: zip
+      - type: unpack
+        file: test.zip
+        dir: subdir_2
+        archive_type: zip
