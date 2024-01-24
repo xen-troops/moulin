@@ -40,27 +40,14 @@ def gen_build_rules(generator: ninja_syntax.Writer):
                    description="Initialize Yocto build environment",
                    restat=True)
     generator.newline()
-    # Сommand manages Yocto Project layers during the build process.
-    # It checks the set of the provided layers against the cached data.
-    # If a cache file exists, the logic compares the provided layers against
-    # the cached ones.
-    # If there are differences between two data sets, the rule removes all
-    # previous layers and adds the new set of layers.
-    # If the file doesn't exist yet, the logic adds the layers to the Yocto
-    # and updates the cache of the added layers for further usage.
-    cmd = " ".join([
-        r'cd $yocto_dir', r'&&',
-        r'source poky/oe-init-build-env $work_dir', r'&&',
-        r'if [ -e \"$out\" ];',
-        r'then current_layers=\$$(cat \"$out\");',
-        r'if [ \"\$$current_layers\" != \"$layers\" ];',
-        r'then (bitbake-layers remove-layer \$$current_layers || true);',
-        r'bitbake-layers add-layer $layers && echo \"$layers\" > $out;',
-        r'fi;',
-        r'else bitbake-layers add-layer $layers && echo \"$layers\" > $out;',
-        r'fi;',
-        ])
 
+    # Add bitbake layers by calling bitbake-layers script
+    cmd = " && ".join([
+        "cd $yocto_dir",
+        "source poky/oe-init-build-env $work_dir",
+        "bitbake-layers add-layer $layers",
+        "touch $out",
+    ])
     generator.rule("yocto_add_layers",
                    command=f'bash -c "{cmd}"',
                    description="Add yocto layers",
@@ -235,7 +222,6 @@ class YoctoBuilder:
 
         # Then we need to add layers
         layers_node = self.conf.get("layers", None)
-        layers_stamp = None
         if layers_node:
             layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
             layers = " ".join(_filter_yocto_core_layers(_flatten_layers(layers_node)))
@@ -262,17 +248,13 @@ class YoctoBuilder:
 
         self.generator.build(local_conf_target,
                              "yocto_update_conf",
-                             env_target,
+                             layers_stamp if layers_node else env_target,
                              variables=dict(common_variables, conf=" ".join(local_conf_lines)))
         self.generator.newline()
 
         self.generator.build(f"conf-{self.name}", "phony", local_conf_target)
         self.generator.newline()
 
-        # Add layers stamp to the dependencies only if it exists
-        conf_deps = [local_conf_target]
-        if layers_stamp:
-            conf_deps.append(layers_stamp)
         # Next step - invoke bitbake. At last :)
         targets = self.get_targets()
         additional_deps_node = self.conf.get("additional_deps", None)
@@ -280,7 +262,7 @@ class YoctoBuilder:
             deps = [os.path.join(self.yocto_dir, d.as_str) for d in additional_deps_node]
         else:
             deps = []
-        deps.extend(conf_deps)
+        deps.append(local_conf_target)
         self.generator.build(targets,
                              "yocto_build",
                              deps,
