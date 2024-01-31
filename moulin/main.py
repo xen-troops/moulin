@@ -131,9 +131,9 @@ def moulin_entry():
     conf, args = _handle_shared_opts(
         f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}',
         additional_opts=additional_opts)
-    log.info("Generating build.ninja")
 
     if not args.fetcherdep:
+        log.info("Generating build.ninja")
         build_generator.generate_build(conf, args.conf)
     else:
         log.info("Generating deps for component '%s'", args.fetcherdep[0])
