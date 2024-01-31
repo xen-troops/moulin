@@ -10,6 +10,10 @@ from typing import List, Union, IO
 from .ninja_syntax import as_list
 
 
+def _escape(string: str) -> str:
+    return string.replace(" ", "\\ ")
+
+
 class Writer:
     "Minimal Makefile Writter"
 
@@ -41,8 +45,7 @@ class Writer:
         "Emit a simple dependency without build rules"
         outputs = as_list(outputs)
         inputs = as_list(inputs)
-
-        self._line('%s: %s' % (' '.join(outputs), ' '.join(inputs)))
+        self._line('%s: %s' % (' '.join(map(_escape, outputs)), ' '.join(map(_escape, inputs))))
 
     def close(self) -> None:
         "Close the output file"
