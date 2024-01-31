@@ -27,6 +27,8 @@ def generate_build(conf: MoulinConfiguration,
     """
     generator = ninja_syntax.Writer(open(ninja_build_fname, 'w'), width=120)
 
+    generator.variable("ninja_required_version", "1.10")
+
     _gen_regenerate(conf_file_name, generator)
 
     rouge.gen_build_rules(generator)
