@@ -74,10 +74,9 @@ class CustomScriptBuilder:
         b64conf = b64bytes.decode("utf-8")
         targets = self.get_targets()
         additional_deps_node = self.conf.get("additional_deps", None)
+        deps = list(self.src_stamps)
         if additional_deps_node:
-            deps = [d.as_str for d in additional_deps_node]
-        else:
-            deps = []
+            deps.extend([d.as_str for d in additional_deps_node])
         deps.append(local_conf_target)
         self.generator.build(local_conf_target, "cs_update_conf", variables=dict(
             common_variables,
