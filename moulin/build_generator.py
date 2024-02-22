@@ -100,7 +100,7 @@ def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
 
 
 def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
-    this_script = os.path.abspath(sys.argv[0])
+    this_script = os.path.basename(sys.argv[0])
     args = " ".join(sys.argv[1:])
     generator.rule("regenerate", command=f"{this_script} {args}", generator=1)
     generator.newline()
