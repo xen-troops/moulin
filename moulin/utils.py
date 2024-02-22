@@ -16,7 +16,7 @@ def create_stamp_name(*args):
 
 def construct_fetcher_dep_cmd() -> str:
     "Generate command line to generate fetcher dependency file"
-    this_script = os.path.abspath(sys.argv[0])
+    this_script = os.path.basename(sys.argv[0])
     args = " ".join(sys.argv[1:])
     return f"{this_script} {args} --fetcherdep $name"
 
