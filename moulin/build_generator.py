@@ -104,7 +104,7 @@ def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
     args = " ".join(sys.argv[1:])
     generator.rule("regenerate", command=f"{this_script} {args}", generator=1)
     generator.newline()
-    generator.build(BUILD_FILENAME, "regenerate", [this_script, conf_file_name])
+    generator.build(BUILD_FILENAME, "regenerate", conf_file_name)
     generator.newline()
 
 
