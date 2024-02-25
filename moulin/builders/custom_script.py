@@ -84,7 +84,7 @@ class CustomScriptBuilder:
             config_file=local_conf_file))
         self.generator.newline()
 
-        self.generator.build(f"conf-{self.name}", "phony", os.path.join(work_dir, local_conf_target))
+        self.generator.build(f"conf-{self.name}", "phony", local_conf_target)
         self.generator.newline()
 
         self.generator.build(targets, "cs_build", deps, variables=dict(
