@@ -702,6 +702,9 @@ script as parameter
     type: custom_script        # Should be 'custom_script'
     work_dir : "script_workdir"
     script: "path/to/script/custom_script.py"
+    args:
+      - "argument1"
+      - "argument2"
     config:
       items:
         "rootfs": "images/spider/rootfs.tar.bz2"
@@ -732,7 +735,8 @@ Mandatory options:
 
 Optional parameters:
 
-* :code:`args` - additional arguments should be passed to :code:`script`
+* :code:`args` - additional arguments should be passed to :code:`script`. Can be passed as
+  string or list
 
 * :code:`additional_deps` - list of additional dependencies. This is
   basically :code:`target_images` produced by other components. You

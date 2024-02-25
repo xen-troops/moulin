@@ -87,10 +87,15 @@ class CustomScriptBuilder:
         self.generator.build(f"conf-{self.name}", "phony", local_conf_target)
         self.generator.newline()
 
+        args_node = self.conf.get("args", "")
+        if args_node.is_list:
+            args = " ".join([x.as_str for x in args_node])
+        else:
+            args = args_node.as_str
         self.generator.build(targets, "cs_build", deps, variables=dict(
             common_variables,
             config_file=local_conf_file,
-            args=self.conf.get("args", "").as_str))
+            args=args))
         self.generator.newline()
 
         return targets
