@@ -10,6 +10,7 @@ from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
 from moulin.utils import construct_fetcher_dep_cmd
 from moulin import utils
+from moulin.yaml_helpers import YAMLProcessingError
 
 
 def get_builder(conf: YamlValue, name: str, build_dir: str, src_stamps: List[str],
@@ -29,7 +30,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         construct_fetcher_dep_cmd(),
         "cd $build_dir",
         "source zephyr/zephyr-env.sh",
-        "$env west build -p auto -b $board -d $work_dir $target -- $shields $vars",
+        "$env west build -p auto -b $board -d $work_dir $target $snippets -- $shields $vars",
     ])
     generator.rule("zephyr_build",
                    command=f'bash -c "{cmd}"',
@@ -72,6 +73,13 @@ class ZephyrBuilder:
         else:
             shields = ""
 
+        snippets_node = self.conf.get("snippets", [])
+        snippets = " ".join([f"-S {snip.as_str}" for snip in snippets_node])
+
+        if snippets and shields:
+            raise YAMLProcessingError("Both shields and snippets are specified, only one of them is allowed",
+                                      self.conf["snippets"].mark)
+
         vars_node = self.conf.get("vars", None)
         if vars_node:
             vars_vals = [ZephyrBuilder.__escape_vars_vals(x.as_str) for x in vars_node]
@@ -86,6 +94,7 @@ class ZephyrBuilder:
             "target": self.conf["target"].as_str,
             "work_dir": self.conf.get("work_dir", "zephyr/build").as_str,
             "shields": shields,
+            "snippets": snippets,
             "vars": vars_value,
             "env": env,
         }

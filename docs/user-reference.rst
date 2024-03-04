@@ -678,7 +678,10 @@ Optional parameters:
   kernel into :code:`additional_deps` of zephyr's config. This will
   ensure that zephyr will be built **after** DomU.
 
-* :code:`shields` - list of shields should be integrated to zephyr board.
+* :code:`shields` - list of shields should be integrated to zephyr board(For Zephyr < 3.4.0).
+
+* :code:`snippets` - list of snippets should be integrated to zephyr board(For Zephyr >= 3.4.0).
+  Please note that only one of :code:`shields` and :code:`snippets` can be used at the same time.
 
 * :code:`vars` - list of additional variables that should be passed to cmakw
   via :code:`west build`.
