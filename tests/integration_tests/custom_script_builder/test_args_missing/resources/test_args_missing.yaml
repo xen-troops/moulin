@@ -1,0 +1,11 @@
+desc: "Test args parameter missing"
+min_ver: "0.20"
+
+components:
+  test:
+    builder:
+      type: custom_script
+      script: "../../resources/script.sh"
+      target_images:
+        - "Image"
+
