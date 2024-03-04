@@ -1,0 +1,28 @@
+desc: "Integration test Zephyr snippets"
+min_ver: "0.22"
+
+
+components:
+  dom0:
+    default: true
+    build-dir: "ZEPHYR_BUILD_DIR"
+    sources:
+      - type: west
+        url: "https://github.com/xen-troops/aos_core_zephyr.git"
+        rev: "zephyr-v3.6.0"
+
+    builder:
+      type: zephyr
+      board: "rcar_spider"
+      target: aos_core_zephyr
+      work_dir: build
+
+      snippets:
+        - "xen_dom0"
+
+      additional_deps:
+        - "dep_1"
+        - "dep_2"
+
+      target_images:
+        - "build/zephyr/zephyr.bin"
