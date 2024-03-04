@@ -18,10 +18,10 @@ yaml_constructor = SafeConstructor()
 class _YamlDefaultValue:
     """
     Helper class that have the same API as YamlValue, but is
-    constructed from a primitive type. It is used to provide default
+    constructed from a builtin type. It is used to provide default
     value in YamlValue.get() method
     """
-    def __init__(self, val: Union[bool, str, int, float, None]):
+    def __init__(self, val: Union[bool, str, int, float, List, None]):
         self._val = val
 
     def __bool__(self):
@@ -54,6 +54,34 @@ class _YamlDefaultValue:
         if not isinstance(self._val, int):
             raise TypeError("Expected float value")
         return self._val
+
+    @property
+    def is_list(self) -> bool:
+        """Check if this node represents a list"""
+        return isinstance(self._val, list)
+
+    def __iter__(self) -> Iterator["_YamlDefaultValue"]:
+        if not isinstance(self._val, list):
+            raise TypeError("Expected list value")
+        for item in self._val:
+            # We need to wrap the value in _YamlDefaultValue to provide the same API
+            yield _YamlDefaultValue(item)
+
+    def __len__(self) -> int:
+        if not isinstance(self._val, list):
+            raise TypeError("Expected list value")
+        return len(self._val)
+
+    def __getitem__(self, idx: int) -> "_YamlDefaultValue":
+        if not isinstance(self._val, list):
+            raise TypeError("Expected list value")
+        # We need to wrap the value in _YamlDefaultValue to provide the same API
+        return _YamlDefaultValue(self._val[idx])
+
+    def __setitem__(self, idx: int, val: Union[str, int, bool, float]):
+        if not isinstance(self._val, list):
+            raise TypeError("Expected list value")
+        self._val[idx] = val
 
 
 class YamlValue:  # pylint: disable=too-few-public-methods
