@@ -51,7 +51,7 @@ class _YamlDefaultValue:
     @property
     def as_float(self) -> float:
         "Get the floating point value"
-        if not isinstance(self._val, int):
+        if not isinstance(self._val, float):
             raise TypeError("Expected float value")
         return self._val
 
