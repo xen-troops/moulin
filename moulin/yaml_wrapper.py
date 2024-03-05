@@ -45,14 +45,14 @@ class _YamlDefaultValue:
     def as_int(self) -> int:
         "Get the integer value"
         if not isinstance(self._val, int):
-            raise TypeError("Expected int value")
+            raise TypeError("Expected integer value")
         return self._val
 
     @property
     def as_float(self) -> float:
         "Get the floating point value"
         if not isinstance(self._val, float):
-            raise TypeError("Expected float value")
+            raise TypeError("Expected floating point value")
         return self._val
 
     @property
