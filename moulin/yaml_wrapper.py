@@ -4,7 +4,7 @@
 Wrappers for yaml.Node that provide better API
 """
 
-from typing import Optional, List, Tuple, Iterator, Union
+from typing import Optional, List, Tuple, Iterator, Union, Dict
 
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode, Node
 from yaml.constructor import SafeConstructor
@@ -21,7 +21,7 @@ class _YamlDefaultValue:
     constructed from a builtin type. It is used to provide default
     value in YamlValue.get() method
     """
-    def __init__(self, val: Union[bool, str, int, float, List, None]):
+    def __init__(self, val: Union[bool, str, int, float, List, Dict, None]):
         self._val = val
 
     def __bool__(self):
@@ -72,16 +72,55 @@ class _YamlDefaultValue:
             raise TypeError("Expected list value")
         return len(self._val)
 
-    def __getitem__(self, idx: int) -> "_YamlDefaultValue":
-        if not isinstance(self._val, list):
-            raise TypeError("Expected list value")
-        # We need to wrap the value in _YamlDefaultValue to provide the same API
-        return _YamlDefaultValue(self._val[idx])
+    def __getitem__(self, idx: Union[int, str]) -> "_YamlDefaultValue":
+        if isinstance(idx, int):
+            if not isinstance(self._val, list):
+                raise TypeError("Expected list value")
+            # We need to wrap the value in _YamlDefaultValue to provide the same API
+            return _YamlDefaultValue(self._val[idx])
+        elif isinstance(idx, str):
+            if not isinstance(self._val, dict):
+                raise TypeError("Expected dict value")
+            return _YamlDefaultValue(self._val[idx])
+        else:
+            raise KeyError("Key should have either type 'str' or 'int'")
 
-    def __setitem__(self, idx: int, val: Union[str, int, bool, float]):
-        if not isinstance(self._val, list):
-            raise TypeError("Expected list value")
-        self._val[idx] = val
+    def __setitem__(self, idx: Union[int, str], val: Union[str, int, bool, float]):
+        if isinstance(idx, int):
+            if not isinstance(self._val, list):
+                raise TypeError("Expected list value")
+            self._val[idx] = val
+        elif isinstance(idx, str):
+            if not isinstance(self._val, dict):
+                raise TypeError("Expected dict value")
+            self._val[idx] = val
+        else:
+            raise KeyError("Key should have either type 'str' or 'int")
+
+    def _get(self, name: str) -> Optional["_YamlDefaultValue"]:
+        if not isinstance(self._val, dict):
+            raise TypeError("Expected dict value")
+        if name in self._val:
+            return _YamlDefaultValue(self._val[name])
+        return None
+
+    def get(self, name: str, default) -> "_YamlDefaultValue":
+        val = self._get(name)
+        if val:
+            return val
+        return _YamlDefaultValue(default)
+
+    def keys(self) -> List[str]:
+        """Get all keys for this mapping"""
+        if not isinstance(self._val, dict):
+            raise TypeError("Expected dict value")
+        return list(self._val.keys())
+
+    def items(self) -> List[Tuple[str, "_YamlDefaultValue"]]:
+        """Get all items for this mapping"""
+        if not isinstance(self._val, dict):
+            raise TypeError("Expected dict value")
+        return [(key, _YamlDefaultValue(val)) for key, val in self._val.items()]
 
 
 class YamlValue:  # pylint: disable=too-few-public-methods
