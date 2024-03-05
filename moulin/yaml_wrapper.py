@@ -160,12 +160,6 @@ class YamlValue:  # pylint: disable=too-few-public-methods
             raise YAMLProcessingError("Mapping node is expected", self.mark)
         return [(key.value, YamlValue(val)) for key, val in self._node.value]
 
-    def replace_value(self, val: Union[str, int, bool, float]):
-        "Set a new value for a scalar node"
-        if not isinstance(self._node, ScalarNode):
-            raise YAMLProcessingError("Can't replace value for a non-scalar node", self.mark)
-        self._node.value = val
-
     def __getitem__(self, idx: Union[str, int]) -> "YamlValue":
         if isinstance(idx, int):
             if not isinstance(self._node, SequenceNode):
@@ -178,28 +172,34 @@ class YamlValue:  # pylint: disable=too-few-public-methods
             return val
         raise KeyError("Key should have either type 'str' or 'int'")
 
+    def _represent_value(self, val: Union[str, int, bool, float]) -> Node:
+        representer = SafeRepresenter()
+        if isinstance(val, str):
+            return representer.represent_str(val)
+        if isinstance(val, int):
+            return representer.represent_int(val)
+        if isinstance(val, bool):
+            return representer.represent_bool(val)
+        if isinstance(val, float):
+            return representer.represent_float(val)
+        raise TypeError(f"Unsupported type {type(val)}")
+
     def __setitem__(self, idx: Union[str, int], val: Union[str, int, bool, float]):
+        # We need to make a copy of the node because yaml modules caches the nodes
+        # and will ignore the new value
         if isinstance(idx, int):
             if not isinstance(self._node, SequenceNode):
                 raise YAMLProcessingError("SequenceNode node is expected", self.mark)
-            self._node.value[idx].replace_value(val)
-        if isinstance(idx, str):
-            item = self._get(idx)
-            if item:
-                item.replace_value(val)
-            else:
-                representer = SafeRepresenter()
-                key_node = representer.represent_str(idx)
-                if isinstance(val, str):
-                    val_node = representer.represent_str(val)
-                elif isinstance(val, int):
-                    val_node = representer.represent_int(val)
-                elif isinstance(val, bool):
-                    val_node = representer.represent_bool(val)
-                else:
-                    val_node = representer.represent_float(val)
-                self._node.value.append((key_node, val_node))
-        raise KeyError("Key should have either type 'str' or 'int'")
+            self._node.value[idx] = self._represent_value(val)
+        elif isinstance(idx, str):
+            for k, v in self._node.value:
+                if k.value == idx:
+                    self._node.value.remove((k, v))
+            key_node = self._represent_value(idx)
+            val_node = self._represent_value(val)
+            self._node.value.append((key_node, val_node))
+        else:
+            raise KeyError("Key should have either type 'str' or 'int'")
 
     def __iter__(self) -> Iterator["YamlValue"]:
         for item in self._node.value:
