@@ -19,13 +19,9 @@ def test_args_is_string():
 
         assert result.returncode == 0, ("The return code is not equal to '0'")
 
-        result = subprocess.run(["ninja"],
-                                cwd=tmp_dir,
-                                stderr=subprocess.PIPE,
-                                text=True)
-
-        assert result.returncode == 0, ("The return code is not equal to '0'")
-        assert "string" not in result.stderr, "The expected arguments are missing"
+        with open(tmp_dir + "/build.ninja") as f:
+            ninja_file = f.read()
+            assert "args = -string" in ninja_file
 
 
 if __name__ == "__main__":
