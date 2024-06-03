@@ -17,11 +17,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'moulin'
-copyright = '2021-2023, EPAM Systems'
+copyright = '2021-2024, EPAM Systems'
 author = 'EPAM Systems'
 
 # The full version, including alpha/beta/rc tags
-release = 'v0.22'
+release = 'v0.23'
 
 # -- General configuration ---------------------------------------------------
 
