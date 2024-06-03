@@ -249,6 +249,8 @@ repositories. There is a full list of supported parameters:
   url: "url://for.repository/project.git"
   rev: revision_name
   dir: "directory/where/store/code"
+  depth: 1
+  submodules: true
 
 
 
@@ -262,6 +264,11 @@ repositories. There is a full list of supported parameters:
   cloning. If this option is missed, `moulin` will try to guess
   directory name from :code:`url`. This path is relative to
   component's build directory.
+* :code:`submodules` - optional - boolean. Fetch submodules along with
+  main repository.
+* :code:`depth` - optional - cloning depth. Corresponds to :code:`--depth`
+  option for :code:`git clone`. If used together with :code:`submodules`
+  enabled, it will call :code:`git`  with :code:`--shallow-submodules`
 
 repo fetcher
 ^^^^^^^^^^^^
