@@ -29,6 +29,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
 
     generator.rule("repo_sync",
                    command="cd $repo_dir && repo sync && touch $out",
+                   pool="console",
                    description="Repo sync")
     generator.newline()
 
