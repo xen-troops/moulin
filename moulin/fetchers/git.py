@@ -33,12 +33,12 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     generator.rule("git_clone",
                    command="GIT_SSH_COMMAND='ssh -o BatchMode=yes' "
                            "GIT_TERMINAL_PROMPT=0 "
-                           "git clone -q $git_url $git_dir && touch $out",
+                           "git clone $git_clone_opts -q $git_url $git_dir  && touch $out",
                    description="git clone")
     generator.newline()
 
     generator.rule("git_checkout",
-                   command="git -C $git_dir checkout -q $git_rev && touch $out",
+                   command="git -C $git_dir checkout $git_checkout_opts -q $git_rev && touch $out",
                    description="git checkout")
     generator.newline()
 
@@ -65,6 +65,27 @@ class GitFetcher:
         dirname = conf.get("dir", default=_guess_dirname(self.url)).as_str
         self.git_dir = os.path.join(build_dir, dirname)
         self.git_rev = conf.get("rev", default="master").as_str
+        self.clone_opts = []
+        self.checkout_opts = []
+        depth = conf.get("depth", 0).as_int
+        if depth:
+            self.clone_opts.append(f"--depth {depth}")
+        if conf.get("submodules", default=False).as_bool:
+            self.enable_submodules = True
+            self.clone_opts.append("--recurse-submodules")
+            self.checkout_opts.append("--recurse-submodules")
+            if depth:
+                self.clone_opts.append("--shallow-submodules")
+        else:
+            self.enable_submodules = False
+
+        # Download only requested revision. This is less flexible for
+        # developers, but it is bulletproof in terms of potential
+        # checkout issues
+        if depth or self.enable_submodules:
+            self.clone_opts.append(f"--branch {self.git_rev}")
+        else:
+            self.clone_opts.append("--no-checkout")
 
     def gen_fetch(self):
         """Generate instruction to fetch git repo"""
@@ -88,7 +109,8 @@ class GitFetcher:
                              "git_clone",
                              variables={
                                  "git_url": self.url,
-                                 "git_dir": self.git_dir
+                                 "git_dir": self.git_dir,
+                                 "git_clone_opts": " ".join(self.clone_opts),
                              })
         self.generator.newline()
         self.generator.build(checkout_stamp,
@@ -96,17 +118,29 @@ class GitFetcher:
                              clone_stamp,
                              variables={
                                  "git_rev": self.git_rev,
-                                 "git_dir": self.git_dir
+                                 "git_dir": self.git_dir,
+                                 "git_checkout_opts": " ".join(self.checkout_opts),
                              })
         self.generator.newline()
         return checkout_stamp
 
     def get_file_list(self) -> List[str]:
         "Get list of files under git control"
+        files = []
         repo = pygit2.Repository(self.git_dir)
         index = repo.index
         index.read()
-        return [os.path.join(self.git_dir, entry.path) for entry in index]
+        files.extend([os.path.join(self.git_dir, entry.path) for entry in index])
+
+        if self.enable_submodules:
+            for submodule in repo.submodules:
+                sub_repo = submodule.open()
+                index = sub_repo.index
+                index.read()
+                files.extend(
+                    [os.path.join(self.git_dir, submodule.path, entry.path) for entry in index])
+
+        return files
 
     def capture_state(self):
         """
@@ -116,3 +150,6 @@ class GitFetcher:
         repo = pygit2.Repository(self.git_dir)
         head = repo.revparse_single("HEAD")
         self.conf["rev"] = str(head)
+        # TODO: Store submodules state
+        if self.enable_submodules:
+            raise NotImplementedError("Can't (yet) capture state for git submodules")
