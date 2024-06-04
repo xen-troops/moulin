@@ -304,6 +304,30 @@ list of supported options:
   as this is a main `repo` use case.
 
 
+http fetcher
+^^^^^^^^^^^^^^
+
+`http` fetcher is used to download a file via HTTP or HTTPS protocol. It uses
+:code:`curl` tool to do so. Full list of supported options:
+
+.. code-block:: yaml
+
+  type: http # Selects `http` fetcher
+  url: "https://example.com/file.txt"
+  filename: "file.txt"
+  dir: "."
+
+* :code:`type` - mandatory - should be :code:`http` to use `http`
+  fetcher. Use the same type even if you are downloading over HTTPS
+  protocol.
+* :code:`url` - mandatory - URL of a file do be downloaded
+* :code:`filename` - optional (in most cases) - name of the output
+  file. If omitted, `moulin` will try to guess it from a URL. But if
+  can't do so, it will ask you to provide filename manually.
+* :code:`dir` - optional - directory name where store a downloaded
+  file. If it is omitted, `moulin` will use :code:`"."` to download a
+  file right into the component's root directory.
+
 unpack fetcher
 ^^^^^^^^^^^^^^
 
