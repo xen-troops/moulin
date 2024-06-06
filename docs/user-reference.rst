@@ -387,6 +387,20 @@ https://docs.zephyrproject.org/latest/develop/west/built-in.html#west-init
 Regarding installation of `west`, please see:
 https://docs.zephyrproject.org/latest/develop/west/install.html
 
+null fetcher
+^^^^^^^^^^^^
+
+`null` fetcher does nothing. It can be used for testing or in some
+tricky situation when you want to have component without fetchers.
+
+.. code-block:: yaml
+
+  type: "null" # Selects `none` fetcher
+
+* :code:`type` - mandatory - should be :code:`"null"` to use `null` fetcher.
+  Please note that you need to use quotes, otherwise YAML parser will
+  treat it as `null` type.
+
 Builders
 --------
 
@@ -785,3 +799,22 @@ Optional parameters:
 * Remaining parameters should be parsed and used by script pointed in
   :code:`script` option.
 
+
+null builder
+^^^^^^^^^^^^
+
+"null" builder does nothing at all. It even does not generate
+dependencies. It can be used for testing or in cases when you need to
+call fetcher only. Please note that Ninja will not call fetcher for
+the component if fetcher's output file is not used by anything.
+
+.. code-block:: yaml
+
+  builder:
+    type: "null"        # Should be "null"
+
+Mandatory options:
+
+* :code:`type` - Builder type. It should be :code:`"null"` for this type
+  of builder. Please note that you need to use quotes, otherwise YAML parser will
+  treat it as `null` type.
