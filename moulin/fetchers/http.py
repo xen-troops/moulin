@@ -16,7 +16,9 @@ def get_fetcher(conf: YamlValue, build_dir: str, generator: ninja_syntax.Writer)
 
 def gen_build_rules(generator: ninja_syntax.Writer):
     """Generate build rules using Ninja generator"""
-    generator.rule("curl_download", command="curl $url -o $out ", description="curl download $url")
+    generator.rule("curl_download",
+                   command="curl -L $url -o $out ",
+                   description="curl download $url")
     generator.newline()
 
 
