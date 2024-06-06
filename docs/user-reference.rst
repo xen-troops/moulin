@@ -721,6 +721,8 @@ Please note that this builder uses :code:`--pristine=auto` command-line option.
 
 Proper versions of CMake and Zephyr SDK have to be installed on the host.
 
+For additional details please see
+https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html#building-west-build
 
 custom_script builder
 ^^^^^^^^^^^^^^^^^^^^^
@@ -783,5 +785,3 @@ Optional parameters:
 * Remaining parameters should be parsed and used by script pointed in
   :code:`script` option.
 
-For additional details please see
-https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html#building-west-build
