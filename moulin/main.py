@@ -102,7 +102,8 @@ def _handle_shared_opts(description: str,
 
     prog = f"{sys.argv[0]} {local_conf_file}"
     desc = f"Config file description: {conf.desc}"
-    config_argparser = argparse.ArgumentParser(description=desc, prog=prog, add_help=False)
+    config_argparser = argparse.ArgumentParser(description=desc, prog=prog, add_help=False,
+                                               formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     for parameter in conf.get_parameters().values():
         config_argparser.add_argument(f"--{parameter.name}",
                                       choices=[x.name for x in parameter.variants.values()],
