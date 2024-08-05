@@ -47,7 +47,19 @@ def fixup_partition_table(partitions: List[Any], sector_size=512) -> Tuple[List[
             part.gpt_guid, DEFAULT_ALIGNMENT // sector_size)
             )
         pe = table.partitions.entries[-1]
-        start = pe.first_lba * sector_size
+
+        # Workaround for gpt-image: in release 0.9.0 they changed how first LBA
+        # is stored. Now we need to read `first_lba_staged` property. Problem
+        # is that we don't know which version is installed on the user's
+        # machine. So, first we try to read `first_lba_staged` and if it fails
+        # - old `first_lba` property.
+        first_lba = 0
+        try:
+            first_lba = pe.first_lba_staged
+        except AttributeError:
+            first_lba = pe.first_lba
+
+        start = first_lba * sector_size
         ret.append(part._replace(start=start, size=size))
         end = start + size
 
