@@ -41,6 +41,7 @@ class GPTPartition(NamedTuple):
     gpt_guid: str
     start: int
     size: int
+    protective_mbr_type: int
     entry: BlockEntry
 
 
@@ -53,6 +54,8 @@ class GPT(BlockEntry):
         self._sector_size: int = 512
         self._requested_image_size: Optional[int] = None
 
+        self._hybrid_mbr: bool = node.get("hybrid_mbr", False).as_bool
+
         _requested_image_size_node = node.get("image_size", None)
         if _requested_image_size_node:
             self._requested_image_size = _parse_size(_requested_image_size_node)
@@ -61,8 +64,16 @@ class GPT(BlockEntry):
 
         for part_id, part in node["partitions"].items():
             label = part_id
-            entry_obj, gpt_type, gpt_guid = self._process_entry(part, sector_size=self._sector_size)
-            self._partitions.append(GPTPartition(label, gpt_type, gpt_guid, start=0, size=0, entry=entry_obj))
+            entry_obj, gpt_type, gpt_guid, mbr_type = self._process_entry(
+                part, sector_size=self._sector_size)
+            self._partitions.append(
+                GPTPartition(label,
+                             gpt_type,
+                             gpt_guid,
+                             start=0,
+                             size=0,
+                             entry=entry_obj,
+                             protective_mbr_type=mbr_type))
 
     def size(self) -> int:
         "Returns size of image in bytes. Requested in yaml or actually calculated."
@@ -88,7 +99,9 @@ class GPT(BlockEntry):
 
         gpt_guid = node.get("gpt_guid", "").as_str
 
-        return (entry_obj, gpt_type, gpt_guid)
+        mbr_type = node.get("mbr_type", 0x100).as_int
+
+        return (entry_obj, gpt_type, gpt_guid, mbr_type)
 
     def _complete_init(self):
         partitions = [x._replace(size=x.entry.size()) for x in self._partitions]
@@ -98,7 +111,7 @@ class GPT(BlockEntry):
         if not self._size:
             self._complete_init()
 
-        gpti.write(fp, self._partitions, offset, self._size, self._sector_size)
+        gpti.write(fp, self._partitions, offset, self._size, self._sector_size, self._hybrid_mbr)
 
         for part in self._partitions:
             part.entry.write(fp, part.start + offset)

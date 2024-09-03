@@ -9,6 +9,7 @@ from typing import List, Tuple, BinaryIO, Any
 from gpt_image.geometry import Geometry
 from gpt_image.table import Table
 from gpt_image.partition import Partition
+import struct
 import logging
 
 log = logging.getLogger(__name__)
@@ -68,17 +69,63 @@ def fixup_partition_table(partitions: List[Any], sector_size=512) -> Tuple[List[
     return ret, end + 16 * 1024 * 1024
 
 
-def write(fp: BinaryIO, partitions: List[Any], offset: int, size: int, sector_size=512):
+def create_mbr(partitions: List[Any]):
+    partition_format = struct.Struct("<B3xB3xII")
+
+    # Bootstrap code area. Hope, no on use it today
+    ret = bytes(446)
+
+    # Count partitions
+    part_count = len(partitions)
+    if part_count > 3:
+        log.warn(
+            f"There are {part_count} partitions in the partition table, but Hybrid MBR will contain only first 3"
+        )
+
+    # Write info about real partitions
+    for i in range(min(3, part_count)):
+        if partitions[i].protective_mbr_type > 0xFF:
+            raise Exception(
+                "You must provide mbr_type for all partitions when Hybrd MBR is enabled")
+        ret += partition_format.pack(0x80, partitions[i].protective_mbr_type,
+                                     partitions[i].start // 512, partitions[i].size // 512)
+
+    # Write protective partition
+    ret += partition_format.pack(0x80, 0xEE, 1, (partitions[0].start - 1) // 512)
+
+    # Pad till full sector size
+    if part_count < 3:
+        ret += bytes(16) * (3 - part_count)
+
+    # Add magic bytes aka boot signature
+    ret += b"\x55\xAA"
+
+    return ret
+
+
+def write(fp: BinaryIO,
+          partitions: List[Any],
+          offset: int,
+          size: int,
+          sector_size=512,
+          hybrid_mbr=False):
     geometry = Geometry(size, sector_size)
     table = Table(geometry)
     for part in partitions:
-        table.partitions.add(Partition(
-            part.label, part.size, part.gpt_type,
-            part.gpt_guid, DEFAULT_ALIGNMENT // sector_size)
-            )
+        table.partitions.add(
+            Partition(part.label, part.size, part.gpt_type, part.gpt_guid,
+                      DEFAULT_ALIGNMENT // sector_size))
     table.update()
     fp.seek(offset)
-    fp.write(table.protective_mbr.marshal())
+
+    # Create Protective or Hybryd MBR
+    if not hybrid_mbr:
+        fp.write(table.protective_mbr.marshal())
+    else:
+        if sector_size != 512:
+            raise Exception(f"It is not possible to use sector size {sector_size} with hybrid MBR")
+        fp.write(create_mbr(partitions))
+
     # write primary header
     fp.seek(offset + geometry.primary_header_byte)
     fp.write(table.primary_header.marshal())

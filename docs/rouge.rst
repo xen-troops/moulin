@@ -318,6 +318,17 @@ includes Raw Image block.
 :code:`partitions:` section is mandatory. It defines list of
 partitions, where key is a partition label.
 
+:code:`hybrid_mbr` forces rouge to create a Hybrid MBR instead of
+default Protective MBR. Take note that this is experimental feature,
+as different OSes handle Hybrid MBR differently, in other words - this
+type of MBR is not standardized and is not guaranteed to work on your
+setup. It is added mostly to enable support of older Raspberry PI
+models, whose bootloader can't parse GPT. When Hybrid MBR is enabled,
+first three partition entries should contain :code:`mbr_type` property
+with MBR Partitions type code. In most cases you will need
+:code:`0x0C` for FAT32 partitions and :code:`0x83` for Linux file
+systems.
+
 Each partition contains definition of other block type plus optional keys:
 
 :code:`gpt_type:` (which we strongly suggest to provide) key holds GPT Partition
@@ -338,6 +349,11 @@ new Unique Partition GUID in each GPT Partition Entry.
 :code:`sector_size` is a custom sector size, 512 by default, but some devices
 (e.g. fancy flash storage) might have a sector of different size.
 This key allows tuning for such cases.
+
+:code:`mbr_type` is used only when :code:`hybrid_mbr` is set for the
+GPT block entry. It corresponds to MBR partition type byte. List of
+partition types can be found on `Wikipedia
+<https://en.wikipedia.org/wiki/Partition_type>`_.
 
 `rouge` will place partitions one after another, aligning partition
 start to 1 MiB (as per standard recommendation) and partition size to
