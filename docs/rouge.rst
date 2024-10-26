@@ -218,6 +218,7 @@ partition (which is described below).
 
    type: raw_image # defines raw image block
    size: 400 MiB
+   resize: false
    image_path: "some/path/rootfs.ext4"
 
 :code:`image_path` is mandatory. This is a file to be included into
@@ -225,8 +226,13 @@ resulting image.
 
 :code:`size` is optional. If it is omitted, `rouge` will use size of
 file. If provided :code:`size` is smaller than file size, `rouge` will
-stop with an error. Thus, you can create block that is bigger than
-file, but not smaller.
+stop with an error. If provided :code:`size` is bigger than file size,
+`rouge` will try to resize the file to match :code:`size`.
+
+:code:`resize` is optional. If set to :code:`false`, it will prevent
+`rouge` from resizing the image to the size of the block. This is
+useful when you want to include a file that is smaller than the block
+and leave the rest of the block empty.
 
 Android Sparse Image Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

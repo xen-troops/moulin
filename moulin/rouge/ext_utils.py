@@ -93,3 +93,13 @@ def mmd(img: BinaryIO, folders: list):
     args.extend(folders)
 
     _run_cmd(args)
+
+
+def resize2fs(img: str, size: Optional[int] = None):
+    "Resize fs image to the given size"
+    args = ["resize2fs", img]
+
+    if size:
+        args.append(str(size))
+
+    _run_cmd(args)
