@@ -9,6 +9,7 @@ import struct
 import shutil
 import logging
 import itertools
+import subprocess
 from typing import List, Tuple, NamedTuple, cast
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
@@ -129,12 +130,14 @@ class RawImage(BlockEntry):
         self._node = node
         self._fname = self._node["image_path"].as_str
         self._size = 0
+        self._resize = True
 
     def _complete_init(self):
         mark = self._node["image_path"].mark
         if not os.path.exists(self._fname):
             raise YAMLProcessingError(f"Can't find file '{self._fname}'", mark)
         fsize = os.path.getsize(self._fname)
+        self._resize = self._node.get("resize", True).as_bool
         size_node = self._node.get("size", None)
         if size_node:
             self._size = _parse_size(size_node)
@@ -154,7 +157,29 @@ class RawImage(BlockEntry):
     def write(self, fp, offset):
         if not self._size:
             self._complete_init()
-        ext_utils.dd(self._fname, fp, offset)
+
+        fsize = os.path.getsize(self._fname)
+
+        if self._resize and fsize < self._size:
+            # Not using default /tmp to prevent filling ram with huge images
+            with TemporaryDirectory(dir=".") as tmpd:
+                shutil.copy(self._fname, tmpd)
+                with open(os.path.join(tmpd, os.path.basename(self._fname)), "rb+") as data:
+                    data.truncate(self._size)
+                try:
+                    ext_utils.resize2fs(os.path.join(tmpd, os.path.basename(self._fname)))
+                except subprocess.CalledProcessError as e:
+                    log.error(
+                        """Failed to resize %s partition.
+        Right now we support resizing for EXT{2,3,4} partitions only.
+        If you don't really want to resize it, please remove 'size' parameter or set 'resize' to false.
+        If you want to resize some other type of partitions - please create a PR or notify us at least.""",
+                        self._fname)
+                    raise e
+
+                ext_utils.dd(os.path.join(tmpd, os.path.basename(self._fname)), fp, offset)
+        else:
+            ext_utils.dd(self._fname, fp, offset)
 
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
