@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 SETUP_ARGS: Dict[str, Any] = dict(
     name='moulin',  # Required
-    version='0.26',  # Required
+    version='0.27',  # Required
     description='Meta-build system',  # Required
     long_description=long_description,
     long_description_content_type="text/markdown",
