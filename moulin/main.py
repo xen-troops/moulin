@@ -23,6 +23,7 @@ from moulin import build_generator
 from moulin.build_conf import MoulinConfiguration
 import moulin.rouge
 import moulin.rouge.block_entry
+from moulin.log_utils import build_handlers
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ def _handle_shared_opts(description: str,
     loglevel = logging.INFO
     if args.verbose:
         loglevel = logging.DEBUG
-    logging.basicConfig(level=loglevel, format="[%(levelname)s] %(message)s")
+    logging.basicConfig(level=loglevel, handlers=build_handlers("[%(levelname)s] %(message)s"))
 
     local_conf_file = _get_conf_file(args.conf)
 
