@@ -17,7 +17,11 @@ def _run_cmd(args):
 
 
 # pylint: disable=invalid-name
-def dd(file_in: Union[str, BinaryIO], file_out: BinaryIO, out_offset: int, out_size: Optional[int] = None):
+def dd(file_in: Union[str, BinaryIO],
+       file_out: BinaryIO,
+       out_offset: int,
+       out_size: Optional[int] = None,
+       sparse: bool = True):
     "Run dd with the given arguments"
     # Try to guess block size. We would like to use as big block as
     # possible. But we need take into account that "seek" parameter
@@ -37,9 +41,10 @@ def dd(file_in: Union[str, BinaryIO], file_out: BinaryIO, out_offset: int, out_s
         f"bs={blocksize}",
         f"seek={out_offset // blocksize}",
         "status=progress",
-        "conv=sparse",
         "conv=notrunc",
     ]  # yapf: disable
+    if sparse:
+        args.append("conv=sparse")
     if out_size:
         args.append(f"count={out_size // blocksize}")
     _run_cmd(args)

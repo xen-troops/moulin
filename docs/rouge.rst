@@ -183,6 +183,28 @@ defines empty block with size of 4096 bytes. `rouge` supports some SI suffixes:
 Suffix must be separated from number by space. For example:
 :code:`size: 4 MiB` defines size of 4 mebibytes or 4 194 304 bytes.
 
+On `sparse` option
+^^^^^^^^^^^^^^^^^^
+
+Almost all block descriptions support boolean :code:`sparse` option,
+which is enabled by default. You can disable it to generate
+non-sparsed parts of a resulting images. This will create images that
+are bigger while stored on disk, because they physically store all
+non-needed NUL regions. But this may be used in cases when you need to
+zero-out some regions on a flash storage. Bear in mind, that in this
+case you can't write result image with
+
+.. code-block:: yaml
+
+    dd of=image.img of=/dev/outdevce conv=sparse
+
+because with :code:`conv=sparse` option :code:`dd` will "un-sparse"
+the image file, effectively skipping big zeroed regions. So, you
+either need to remove :code:`conv=sparse` option when calling
+:code:`dd`, increasing writing time significantly or use
+:code:`bmaptool` which should be less aggressive with sparsed regions
+detection.
+
 Empty block
 ^^^^^^^^^^^
 
@@ -234,6 +256,12 @@ stop with an error. If provided :code:`size` is bigger than file size,
 useful when you want to include a file that is smaller than the block
 and leave the rest of the block empty.
 
+:code:`sparse` is optional. If it set to to :code:`false`, raw image
+will be copied in non-sparse mode. This may increase final image
+size on disk and processing time. Use this option only when absolutely
+necessary, i.e when some piece of software (like bootloader) depends
+on values in un-allocated sectors.
+
 Android Sparse Image Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -255,6 +283,9 @@ size, read from the file. If provided :code:`size` is smaller than
 read size, `rouge` will stop with an error. Thus, you can create block
 that is bigger than unpacked file, but not smaller.
 
+:code:`sparse` is optional. If it set to to :code:`false`, Android
+sparsed image will be completely un-sparsed, up to creating a fully
+mapped file. It is seldom used, but it is added for completeness.
 
 Filesystem Image With Files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -293,6 +324,12 @@ Also only :code:`items:` can contain directories.
 :code:`size` is optional. `rouge` will calculate total file size and
 add some space for the filesystem metadata to determine block size.
 You can increase size, if wish.
+
+:code:`sparse` is optional. If it set to to :code:`false`, filesystem
+image will be copied in non-sparse mode. This may increase final image
+size on disk and processing time. Use this option only when absolutely
+necessary, i.e when some piece of software (like bootloader) depends
+on values in un-allocated sectors.
 
 GUID Partition Table (GPT) block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
