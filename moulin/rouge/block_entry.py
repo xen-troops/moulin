@@ -26,6 +26,9 @@ class BlockEntry():
     "Base class for various block entries"
 
     # pylint: disable=too-few-public-methods
+    def __init__(self, node: YamlValue, **kwargs):
+        self._node: YamlValue = node
+        self._size: int = 0
 
     def write(self, _file, _offset):
         "write() in base class does nothing"
@@ -50,8 +53,8 @@ class GPT(BlockEntry):
     "Represents GUID Partition Table"
 
     def __init__(self, node: YamlValue, **kwargs):
+        super().__init__(node, **kwargs)
         self._partitions: List[GPTPartition] = []
-        self._size: int = 0
         self._sector_size: int = 512
         self._requested_image_size: Optional[int] = None
 
@@ -127,9 +130,8 @@ class RawImage(BlockEntry):
     "Represents raw image file which needs to be copied as is"
 
     def __init__(self, node: YamlValue, **kwargs):
-        self._node = node
+        super().__init__(node, **kwargs)
         self._fname = self._node["image_path"].as_str
-        self._size = 0
         self._resize = True
 
     def _complete_init(self):
@@ -190,9 +192,8 @@ class AndroidSparse(BlockEntry):
     "Represents android sparse image file"
 
     def __init__(self, node: YamlValue, **kwargs):
-        self._node = node
+        super().__init__(node, **kwargs)
         self._fname = self._node["image_path"].as_str
-        self._size = 0
 
     def _read_size(self, mark: Mark):
         # pylint: disable=invalid-name
@@ -247,6 +248,7 @@ class EmptyEntry(BlockEntry):
     "Represents empty partition"
 
     def __init__(self, node: YamlValue, **kwargs):
+        super().__init__(node, **kwargs)
         self._size = _parse_size(node["size"])
         self._fill_by_zero = (node.get("filled", "").as_str == "zeroes")
 
@@ -263,8 +265,7 @@ class FileSystem(BlockEntry):
     "Represents a filesystem with list of files"
 
     def __init__(self, node: YamlValue, **kwargs):
-        self._node = node
-        self._size = 0
+        super().__init__(node, **kwargs)
         self._items: List[Tuple[str, str, Mark]] = []
 
         files_node = self._node.get("files", None)
