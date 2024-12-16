@@ -29,6 +29,7 @@ class BlockEntry():
     def __init__(self, node: YamlValue, **kwargs):
         self._node: YamlValue = node
         self._size: int = 0
+        self._sparse: bool = node.get("sparse", True).as_bool
 
     def write(self, _file, _offset):
         "write() in base class does nothing"
@@ -65,6 +66,11 @@ class GPT(BlockEntry):
             self._requested_image_size = _parse_size(_requested_image_size_node)
 
         self._sector_size = node.get("sector_size", 512).as_int
+
+        if not self._sparse:
+            raise Exception("""GPT block entry does not support sparse=false option yet.
+You probably don't need this anyways. But if you really do need this feature -
+please open an issue on GitHub.""")
 
         for part_id, part in node["partitions"].items():
             label = part_id
@@ -179,9 +185,12 @@ class RawImage(BlockEntry):
                         self._fname)
                     raise e
 
-                ext_utils.dd(os.path.join(tmpd, os.path.basename(self._fname)), fp, offset)
+                ext_utils.dd(os.path.join(tmpd, os.path.basename(self._fname)),
+                             fp,
+                             offset,
+                             sparse=self._sparse)
         else:
-            ext_utils.dd(self._fname, fp, offset)
+            ext_utils.dd(self._fname, fp, offset, sparse=self._sparse)
 
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
@@ -237,7 +246,7 @@ class AndroidSparse(BlockEntry):
             self._complete_init()
         with NamedTemporaryFile("w+b", dir=".") as tmpf:
             ext_utils.simg2img(self._fname, tmpf)
-            ext_utils.dd(tmpf, fp, offset)
+            ext_utils.dd(tmpf, fp, offset, sparse=self._sparse)
 
     def get_deps(self) -> List[str]:
         "Return list of dependencies needed to build this block"
@@ -258,7 +267,7 @@ class EmptyEntry(BlockEntry):
 
     def write(self, fp, offset):
         if self._fill_by_zero:
-            ext_utils.dd("/dev/zero", fp, offset, out_size=self._size)
+            ext_utils.dd("/dev/zero", fp, offset, out_size=self._size, sparse=False)
 
 
 class FileSystem(BlockEntry):
@@ -346,7 +355,7 @@ class Ext4(FileSystem):
                     shutil.copytree(local, os.path.join(tempd, remote), symlinks=True, dirs_exist_ok=True)
             tempf.truncate(self._size)
             ext_utils.mkext4fs(tempf, tempd)
-            ext_utils.dd(tempf, fp, offset)
+            ext_utils.dd(tempf, fp, offset, sparse=self._sparse)
 
 
 class Vfat(FileSystem):
@@ -414,7 +423,7 @@ class Vfat(FileSystem):
 
             for remote, local, _ in self._items:
                 ext_utils.mcopy(tempf, local, remote)
-            ext_utils.dd(tempf, fp, offset)
+            ext_utils.dd(tempf, fp, offset, sparse=self._sparse)
 
 
 _ENTRY_TYPES = {
