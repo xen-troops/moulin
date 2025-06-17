@@ -87,6 +87,9 @@ class Parameter:
             if variant.default:
                 self.default = variant
                 break
+        else:
+            raise YAMLProcessingError(f"Parameter '{self.name}' has no default option",
+                                      node.start_mark)
 
     def apply_overrides(self, node: MappingNode, variant_name: str):
         "Apply given variant to a mapping node"

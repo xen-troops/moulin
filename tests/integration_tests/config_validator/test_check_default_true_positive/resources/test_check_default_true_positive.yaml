@@ -1,0 +1,17 @@
+desc: "Test check 'default: true' positive"
+min_ver: "0.26"
+
+
+components:
+  test:
+    builder:
+      type: "null"
+parameters:
+  paramA:
+    desc: "Parameter A"
+    variantA:
+      default: true
+  paramB:
+    desc: "Parameter B"
+    variantA:
+      default: true
