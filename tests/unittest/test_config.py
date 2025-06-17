@@ -123,8 +123,12 @@ desc: "Test build"
 parameters:
   paramA:
     desc: "Parameter A"
+    variantA:
+      default: true
   paramB:
     desc: "Parameter B"
+    variantA:
+      default: true
 """
         expected = ["paramA", "paramB"]
         conf = gen_config(doc)
@@ -138,7 +142,7 @@ parameters:
   paramA:
     desc: "Parameter A"
     variantA:
-      default: false
+      default: true
     variantB:
       default: false
     variantC:
@@ -173,9 +177,11 @@ parameters:
   paramA:
     desc: "Parameter A"
     variantA:
+      default: true
       overrides:
         val: A
     variantB:
+      default: false
       overrides:
         val: B
 """
