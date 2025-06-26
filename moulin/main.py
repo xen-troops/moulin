@@ -16,6 +16,7 @@ import yaml
 from urllib.parse import urlparse, unquote
 import urllib.request
 import os.path
+import json
 
 from packaging.version import Version
 
@@ -136,6 +137,8 @@ def moulin_entry():
         additional_opts=additional_opts)
 
     if not args.fetcherdep:
+        # Check version and notify
+        check_version_and_notify()
         log.info("Generating build.ninja")
         build_generator.generate_build(conf, args.conf)
     else:
@@ -248,3 +251,35 @@ def _rouge_validate_output(output_file: str, args):
         log.warning("Overwriting file %s", output_file)
 
     return output_path
+
+
+def check_version_and_notify() -> None:
+    """
+    Check for updates and notify if a new Moulin version is available.
+    """
+
+    # Get local version
+    local_version = Version(importlib_metadata.version("moulin"))
+
+    # Get remote version
+    try:
+        url = "https://api.github.com/repos/xen-troops/moulin/releases/latest"
+        with urllib.request.urlopen(url, timeout=0.5) as response:
+            data = json.load(response)
+
+        tag = data.get("tag_name", "")
+        if not tag:
+            return
+
+        remote_version = Version(tag.lstrip("v"))
+    except Exception as e:
+        log.debug("Remote version check failed: %s", e)
+        return
+
+    # Compare versions and notify
+    if local_version < remote_version:
+        log.warning("New version %s of Moulin is available. \nLocal version %s. Please update Moulin.",
+                    remote_version,
+                    local_version)
+    else:
+        log.debug("You are using the latest version of Moulin: %s", local_version)
