@@ -215,9 +215,16 @@ class YoctoBuilder:
 
         # First we need to ensure that "conf" dir exists
         env_target = os.path.join(self.yocto_dir, self.work_dir, "conf", "local.conf")
+        all_deps = self.src_stamps.copy()
+        additional_deps_node = self.conf.get("additional_deps", None)
+        if additional_deps_node:
+            all_deps.extend(
+                os.path.join(self.yocto_dir, d.as_str)
+                for d in additional_deps_node
+            )
         self.generator.build(env_target,
                              "yocto_init_env",
-                             self.src_stamps,
+                             all_deps,
                              variables=common_variables)
 
         # Then we need to add layers
@@ -257,15 +264,9 @@ class YoctoBuilder:
 
         # Next step - invoke bitbake. At last :)
         targets = self.get_targets()
-        additional_deps_node = self.conf.get("additional_deps", None)
-        if additional_deps_node:
-            deps = [os.path.join(self.yocto_dir, d.as_str) for d in additional_deps_node]
-        else:
-            deps = []
-        deps.append(local_conf_target)
         self.generator.build(targets,
                              "yocto_build",
-                             deps,
+                             local_conf_target,
                              variables=dict(common_variables,
                                             target=self.conf["build_target"].as_str,
                                             name=self.name))
