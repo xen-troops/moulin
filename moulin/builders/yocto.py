@@ -219,7 +219,9 @@ class YoctoBuilder:
         additional_deps_node = self.conf.get("additional_deps", None)
         if additional_deps_node:
             all_deps.extend(
-                os.path.join(self.yocto_dir, d.as_str)
+                os.path.normpath(
+                    os.path.join(self.yocto_dir, d.as_str)
+                )
                 for d in additional_deps_node
             )
         self.generator.build(env_target,
