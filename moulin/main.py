@@ -11,6 +11,7 @@ from time import time
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
+import importlib
 import importlib_metadata
 import yaml
 from urllib.parse import urlparse, unquote
@@ -29,6 +30,27 @@ from moulin.log_utils import build_handlers
 log = logging.getLogger(__name__)
 
 OptionDef = Tuple[List[str], Dict[str, Any]]
+
+# Marker prefix for utility calls
+UTILITY_PREFIX = "--utility-"
+
+
+def _dispatch_utility(mod_qual: str, argv: List[str], conf):
+    """
+    Import moulin.<mod_qual>, find handle_utility_call() and run it.
+    """
+    try:
+        mod = importlib.import_module(f"moulin.{mod_qual}")
+    except ModuleNotFoundError as e:
+        log.error("Utility module 'moulin.%s' not found: %s", mod_qual, e)
+        sys.exit(2)
+
+    handler = getattr(mod, "handle_utility_call", None)
+    if handler is None:
+        log.error("Utility 'moulin.%s' has no handle_utility_call()", mod_qual)
+        sys.exit(2)
+
+    return handler(conf, argv)
 
 
 def _prepre_shared_opts(description: str,
@@ -132,9 +154,37 @@ def moulin_entry():
     additional_opts = [
         (["--fetcherdep"], dict(nargs=1, metavar="component", help=argparse.SUPPRESS)),
     ]
-    conf, args = _handle_shared_opts(
-        f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}',
-        additional_opts=additional_opts)
+    desc = f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}'
+
+    # 1) Preview-parsing of known options to detect a utility in extras
+    preview_parser = _prepre_shared_opts(desc, additional_opts)
+    preview_args, extras = preview_parser.parse_known_args(sys.argv[1:])
+
+    util_tok = None
+    util_name = None
+    util_argv = []
+
+    for i, tok in enumerate(extras):
+        if tok.startswith(UTILITY_PREFIX):
+            util_tok = tok
+            util_name = tok[len(UTILITY_PREFIX):]
+            util_argv = extras[i+1:]
+            break
+
+    # 2) If the --utility argument is present
+    if util_name is not None:
+        util_idx = sys.argv.index(util_tok)
+        sys.argv = sys.argv[:util_idx]
+
+        # 3) Parsing and loading configuration
+        conf, args = _handle_shared_opts(desc, additional_opts)
+
+        # 4) Dispatching the utility
+        mod_qual = util_name.replace("-", ".")
+        return _dispatch_utility(mod_qual, util_argv, conf)
+
+    # 5) If the --utility parameter is not specified --> normal execution flow
+    conf, args = _handle_shared_opts(desc, additional_opts)
 
     if not args.fetcherdep:
         # Check version and notify
