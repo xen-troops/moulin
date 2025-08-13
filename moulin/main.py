@@ -11,6 +11,7 @@ from time import time
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
+import importlib
 import importlib_metadata
 import yaml
 from urllib.parse import urlparse, unquote
@@ -30,10 +31,31 @@ log = logging.getLogger(__name__)
 
 OptionDef = Tuple[List[str], Dict[str, Any]]
 
+# Marker prefix for utility calls
+UTILITY_PREFIX = "--utility-"
 
-def _prepre_shared_opts(description: str,
-                        additional_opts: Optional[List[OptionDef]] = None,
-                        exclusive_opts: Optional[List[List[OptionDef]]] = None):
+def _dispatch_utility(mod_qual: str, argv: List[str]) -> int:
+    """
+    Import moulin.<mod_qual>, find handle_utility_call() and run it.
+    Utilities do NOT receive a configuration object.
+    """
+    try:
+        mod = importlib.import_module(f"moulin.{mod_qual}")
+    except ModuleNotFoundError as e:
+        log.error("Utility module 'moulin.%s' not found: %s", mod_qual, e)
+        sys.exit(2)
+
+    handler = getattr(mod, "handle_utility_call", None)
+    if handler is None:
+        log.error("Utility 'moulin.%s' has no handle_utility_call()", mod_qual)
+        sys.exit(2)
+
+    return handler(argv)
+
+
+def _prepare_shared_opts(description: str,
+                         additional_opts: Optional[List[OptionDef]] = None,
+                         exclusive_opts: Optional[List[List[OptionDef]]] = None):
 
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('conf',
@@ -83,7 +105,7 @@ def _handle_shared_opts(description: str,
                         additional_opts: Optional[List[OptionDef]] = None,
                         exclusive_opts: Optional[List[List[OptionDef]]] = None):
 
-    parser = _prepre_shared_opts(description, additional_opts, exclusive_opts)
+    parser = _prepare_shared_opts(description, additional_opts, exclusive_opts)
 
     args, extra_opts = parser.parse_known_args()
 
@@ -135,9 +157,53 @@ def moulin_entry():
             (["--dep"], dict(nargs=1, metavar="component", help=argparse.SUPPRESS)),
         ],
     ]
-    conf, args = _handle_shared_opts(
-        f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}',
-        exclusive_opts=exclusive_opts)
+
+    desc = f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}'
+
+    # Read raw argv without the program name.
+    # Intentionally avoid argparse here because the "normal" parser expects
+    # a positional build.yaml, which is not used in utility mode.
+    argv = sys.argv[1:]
+
+    # Utility detection state:
+    util_name = None  # utility identifier after the prefix (e.g. "builders-yocto")
+    util_pos = None  # index of the utility token in argv
+    util_argv = []  # tail arguments after the utility token (to pass into the handler)
+
+    # Search argv for the utility prefix ("--utility-").
+    # Once found, capture its name, position, and the trailing arguments.
+    for i, tok in enumerate(argv):
+        if tok.startswith(UTILITY_PREFIX):
+            util_name = tok[len(UTILITY_PREFIX):]
+            util_pos = i
+            util_argv = argv[i+1:]
+            break
+
+    # If the --utility argument is present
+    if util_name is not None:
+        # In utility mode we never accept a configuration file. Therefore, any token
+        # that appears before the utility token and does NOT start with '-' is treated
+        # as a positional argument (most commonly a build.yaml path) and must be rejected.
+        pre_tokens = argv[:util_pos] if util_pos is not None else []
+        offending = []
+        for t in pre_tokens:
+            if not t.startswith("-"):
+                offending.append(t)
+
+        if offending:
+            log.error(
+                "Utility mode does not accept a configuration file. "
+                "Remove build.yaml when using '--utility-*'. Offending token(s): %s",
+                " ".join(offending),
+            )
+            sys.exit(2)
+
+        # Dispatch the utility WITHOUT a configuration object.
+        mod_qual = util_name.replace("-", ".")
+        return _dispatch_utility(mod_qual, util_argv)
+
+    # If the --utility parameter is not specified --> normal execution flow
+    conf, args = _handle_shared_opts(desc, exclusive_opts=exclusive_opts)
 
     if args.fetcherdep:
         log.error("build.ninja was created with an older version of Moulin. "
