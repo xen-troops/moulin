@@ -34,6 +34,7 @@ OptionDef = Tuple[List[str], Dict[str, Any]]
 # Marker prefix for utility calls
 UTILITY_PREFIX = "--utility-"
 
+
 def _dispatch_utility(mod_qual: str, argv: List[str]) -> int:
     """
     Import moulin.<mod_qual>, find handle_utility_call() and run it.
