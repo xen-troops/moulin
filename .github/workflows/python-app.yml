@@ -6,8 +6,12 @@ name: Python application
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/*.rst'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/*.rst'
 
 jobs:
   build:
