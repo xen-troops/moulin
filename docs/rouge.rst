@@ -28,14 +28,18 @@ Requirements
 ------------
 
 To do its job `rouge` invokes number of external utilities. Most of
-them are available on every system, except Android tools that usually
-should be installed separately. There is a list:
+them are available on every system with the following exceptions:
+
+ - To work with `vfat`, install the `mtools` package.
+ - To work with Android, install the `simg2img` package.
+
+There is a list of external tools used for the generation of images:
 
  - `dd` - used to copy raw images
  - `mkfs.ext4` - creates ext4 FS
  - `mkfs.vfat` - creates vfat FS
  - `simg2img` - used to unpack Android sparse image files
- - `mcopy` - populates vfat images with files
+ - `mcopy` and `mdd` - to handle vfat images
 
 
 Invoking `rouge`
@@ -314,6 +318,7 @@ partitions, where you store kernel, initial ramdisk and so on.
 
 :code:`type` is required. Defines the filesystem type,
 currently `ext4` and `vfat` are supported.
+You need to install the `mtools` package to work with `vfat`.
 
 :code:`items:` section is optional. It defines :code:`remote:local`
 mapping of files that should be presented on newly created
