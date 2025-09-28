@@ -36,7 +36,8 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     moulin_args = " ".join(sys.argv[1:])
     generator.rule("rouge", f"rouge {moulin_args} -fi $image_name -o $out")
     generator.newline()
-    generator.rule("gzip", "gzip -1kf $in")
+    # the pigz is faster, but gzip is available everywhere
+    generator.rule("gzip", "command -v pigz > /dev/null 2>&1 && pigz -1kf $in || gzip -1kf $in")
     generator.newline()
     generator.rule("bmaptool", "bmaptool create $in -o $out")
     generator.newline()
