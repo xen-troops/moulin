@@ -10,15 +10,15 @@ YAML (yet-another-markup-language) is a quite simple tree-like file
 format that can be easily read by humans and machines. If you are not
 familiar with it, you can take a look at the `official specification
 <https://yaml.org/spec/1.2/spec.html#Preview>`_ or read any of
-multiple guides that are available in the Internet.
+the multiple guides that are available on the Internet.
 
-For the most of this documentation we assume that you can read and
+For most of this documentation, we assume that you can read and
 understand YAML files.
 
 Simple Android build
 --------------------
 
-There is example of minimal AOSP build:
+There is an example of a minimal AOSP build:
 
 .. code-block:: yaml
 
@@ -42,28 +42,28 @@ There is example of minimal AOSP build:
 		        - "out/xenvm/userdebug/boot.img"
 		        - "out/xenvm/userdebug/system.img"
 
-Let's discuss what is going there. This project file consist of two
-mandatory sections. :code:`desc` provides description for the
-build. In this case it tells us that we will build very specific
+Let's discuss what's happening there. This project file consists of two
+mandatory sections. :code:`desc` provides a description for the
+build. In this case, it tells us that we will build a particular
 variant of Android 11.
 
-:code:`components` section is the main part of the file. It describes
+:code:`components` section is the central part of the file. It describes
 only one component, which is :code:`android`, of course. Every
 component consists of two main parts: :code:`sources` and
 :code:`builder`.
 
 :code:`sources` describe all code sources that should be fetched prior
-the building. In this particular case we have only one `repo
+to building. In this particular case, we have only one `repo
 <https://gerrit.googlesource.com/git-repo>`_ - based source.
 
-:code:`builder` section configures the actual build. In this example
+:code:`builder` section configures the actual build. In this example,
 we are building Android, so it has Android-specific options like
 :code:`lunch_target`.
 
 If the code above is stored in file `android-vm.yaml`, you can issue
-:code:`moulin android-vm.yaml`. This will create `build.ninja` file in
+:code:`moulin android-vm.yaml`. This will create a `build.ninja` file in
 the same directory. After that, just run `ninja` and it will use
-`repo` to fetch given manifest, synchronize sources and start the
+`repo` to fetch the given manifest, synchronize sources, and start the
 build.
 
 
@@ -121,21 +121,21 @@ Now let's consider more complex example:
 		          MACHINE: qemu-zynq7
 
 
-This build file allows you to build Xilinx BSP for one of selected
-devices(zc702-zynq7, zc706-zynq7, qemu-zynq7). Apart from early
-discussed :code:`desc` and :code:`components` sections we can see two
+This build file allows you to build the Xilinx BSP for one of the selected
+devices(zc702-zynq7, zc706-zynq7, qemu-zynq7). Apart from the early
+discussed :code:`desc` and :code:`components` sections, we can see two
 new: :code:`variables` and :code:`parameters`. But let's take a look
-at the component. In this case we are fetching two `git`
-repositories. Also we are building Yocto distribution now, we have
-completely different builder with different option. You can see
-familiar Yocto settings like list of layers on additional `local.conf`
-entries. All those sections are described in detail in reference manual.
+at the component. In this case, we are fetching two `git`
+repositories. Also, we are building a Yocto distribution now, and we have
+a completely different builder with different options. You can see
+familiar Yocto settings like a list of layers on the additional `local.conf`
+entries. All those sections are described in detail in the reference manual.
 
 
 :code:`variables` section describes variables. This is basically
 strings that can be used in any other part of the file using
 :code:`%{VARIABLE_NAME}` syntax. We are using :code:`%` symbol instead
-of more familiar :code:`$` sign to ensure that it will not clash with
+of the more familiar :code:`$` sign to ensure that it will not clash with
 `bitbake`'s or `make`'s variables. It is really annoying to escape
 dollar signs in constructions like the following::
 
@@ -145,7 +145,7 @@ dollar signs in constructions like the following::
 
 Please note that in this particular example topmost :code:`variables`
 section can be omitted, because only one variable will be overwritten
-by subsequent :code:`parameters`. But, generally you can define
+by subsequent :code:`parameters`. But, generally, you can define
 variables there. Also, one variable can refer to another:
 
 .. code-block:: yaml
@@ -163,7 +163,7 @@ variables there. Also, one variable can refer to another:
 		  B: "%%{A}_%%{A}" # will be expanded to "%{A}_%{A}"
 
 :code:`parameters` section provides means to parameterize your
-build. If you have such section in your build file, you can get help
+build. If you have such a section in your build file, you can get help
 using `moulin` itself::
 
   $ moulin xilinx-bsp.yaml --help-config
@@ -175,10 +175,10 @@ using `moulin` itself::
       --MACHINE {zc702-zynq7,zc706-zynq7,qemu-zynq7}
                             Xilinx device for which we will build
 
-:code:`parameters` section consist of one or more parameters, and each
+:code:`parameters` section consists of one or more parameters, and each
 parameter can have a number of predefined values, one of which must
 have :code:`default` flag set. User can select desired parameter
-variant with command line::
+variant with the command line::
 
   $ moulin xilinx-bsp.yaml --MACHINE qemu-zynq7
 
@@ -190,7 +190,7 @@ overwrite :code:`MACHINE` variable with some meaningful value.
 Parameterized build with multiple images
 ----------------------------------------
 
-The next example is the most complex one. It shows the main reason why
+The following example is the most complex one. It shows the main reason why
 `moulin` was written in the first place:
 
 .. code-block:: yaml
@@ -220,7 +220,7 @@ The next example is the most complex one. It shows the main reason why
 		    - [XT_DIR_REL_DOM0, "dom0"]
 		    - [XT_DIR_REL_DOMD, "domd"]
 
-		    # these are the folders within domain's root filesystem where all
+		    # these are the folders within the domain's root filesystem where all
 		    # installed artifacts live
 		    - [XT_DIR_ABS_ROOTFS, "/xt"]
 
@@ -231,7 +231,7 @@ The next example is the most complex one. It shows the main reason why
 		    - [XT_DIR_ABS_ROOTFS_DOMR, "${XT_DIR_ABS_ROOTFS}/${XT_DIR_REL_DOMR}/"]
 		    - [XT_DIR_ABS_ROOTFS_DOMU, "${XT_DIR_ABS_ROOTFS}/${XT_DIR_REL_DOMU}/"]
 
-		    # these are folder names to be used accross domains to install
+		    # these are folder names to be used across domains to install
 		    # various types of artifacts
 		    - [XT_DIR_ABS_ROOTFS_SCRIPTS, "${XT_DIR_ABS_ROOTFS}/scripts"]
 		    - [XT_DIR_ABS_ROOTFS_CFG, "${XT_DIR_ABS_ROOTFS}/cfg"]
@@ -258,7 +258,7 @@ The next example is the most complex one. It shows the main reason why
 		        # For virtualization
 		        - [DISTRO_FEATURES_append, " virtualization"]
 		        - [DISTRO_FEATURES_append, " xen"]
-		        # FIXME: normally bitbake fails with error if there are bbappends w/o recipes
+		        # FIXME: normally bitbake fails with an error if there are bbappends w/o recipes
 
 		        - [SERIAL_CONSOLES, ""]
 
@@ -289,7 +289,7 @@ The next example is the most complex one. It shows the main reason why
 		      target_images:
 		        - "tmp/deploy/images/salvator-x/core-image-minimal-salvator-x.ext4"
 		        - "tmp/deploy/images/salvator-x/bl2-salvator-x.bin"
-		      # Dependencies from other layers (like domd kernel image for example)
+		      # Dependencies from other layers (like domd kernel image, for example)
 		      additional_deps:
 		        - "build-domd/tmp/deploy/images/%{MACHINE}/Image"
 		  domd:
@@ -434,18 +434,18 @@ The next example is the most complex one. It shows the main reason why
 		                  # Remove development tools from the image
 		                  - [IMAGE_INSTALL_remove " strace eglibc-utils ldd rsync gdbserver dropbear opkg git subversion nano cmake vim"]
 		                  - [DISTRO_FEATURES_remove " opencv-sdk"]
-		                  # Do not enable surroundview which cannot be used
+		                  # Do not enable surroundview, which cannot be used
 		                  - [DISTRO_FEATURES_remove " surroundview"]
 		                  - [PACKAGECONFIG_remove_pn-libcxx "unwind"]
 
 
-This is an example of real build configuration file. It is still under
-development, so unlike two previous examples, you would not be able to
+This is an example of a real build configuration file. It is still under
+development, so unlike the two previous examples, you would not be able to
 use this example to make a build. We would not cover it in detail,
 just give you the list of highlights:
 
 #. It builds two Yocto-based images: `dom0` and `domd`.
-#. The same work directory used, so builds can share repositories with layers.
+#. The same work directory is used, so builds can share repositories with layers.
 #. There is :code:`common_data` section that provides some options
    that are shared by both builds: some source code and some
    `local.conf` entries.
@@ -453,7 +453,7 @@ just give you the list of highlights:
    one component into another. In this way, `Dom0` image can include
    Linux kernel image generated by `DomD`.
 #. There are two parameters: :code:`MACHINE` and
-   :code:`USE_PREBUILT_DDK`. This allows user to chose target machine
+   :code:`USE_PREBUILT_DDK`. This allows user to choose the target machine
    and build some proprietary drivers if they have access to
-   corresponding repository.
+   the corresponding repository.
 #. Local `git` repos are used.

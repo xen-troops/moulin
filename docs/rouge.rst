@@ -5,12 +5,12 @@ About
 -----
 
 `rouge` is a companion tool for `moulin`. Its purpose is to simplify
-creation of bootable images. It can create partition table, fill
+the creation of bootable images. It can create a partition table, fill
 partitions with predefined files or raw data. It supports GPT, ext4fs,
-raw images, Android sparse images. Further formats can be added if
+raw images, and Android sparse images. Further formats can be added if
 needed.
 
-Right now it can be used only as a separate tool, but there are plans
+Right now, it can be used only as a separate tool, but there are plans
 to integrate it into `moulin` output.
 
 Design Principles
@@ -18,17 +18,17 @@ Design Principles
 
 `rouge` shares ideas (and code) with `moulin`. Thus, it is very
 similar in configuring and invoking to `moulin`. It can be used as a
-stand-alone tool: just provide only :code:`images:` section in your
-YAML file. Or you can include this section into the same file, which
-is used by `moulin` to share common options or variables. In latter
-case `moulin` will generate additional :code:`image-{image_name}`
-rules, so you can build images with Ninja.
+stand-alone tool: provide only :code:`images:` section in your
+YAML file. Or you can include this section in the same file, which
+is used by `moulin` to share common options or variables. In the latter
+case, `moulin` will generate additional :code:`image-{image_name}`
+rules so that you can build images with Ninja.
 
 Requirements
 ------------
 
-To do its job `rouge` invokes number of external utilities. Most of
-them are available on every system with the following exceptions:
+To perform its function, `rouge` invokes several external utilities. Most of
+them are available on every system, with the following exceptions:
 
  - To work with `vfat`, install the `mtools` package.
  - To work with Android, install the `simg2img` package.
@@ -47,9 +47,9 @@ Invoking `rouge`
 
 `rouge` uses the same design ideas as `moulin`, and part of the
 command line options are shared with `moulin`. This includes
-:code:`--help-config`, :code:`-v` and :code:`--dump` arguments. Please
+:code:`--help-config`, :code:`-v`, and :code:`--dump` arguments. Please
 refer to :ref:`moulin <invoking_moulin>` documentation for more
-details. This document describes only argument specific to `rouge`.
+details. This document describes only arguments specific to `rouge`.
 
 .. code-block::
 
@@ -61,30 +61,30 @@ details. This document describes only argument specific to `rouge`.
 
  - :code:`-i image_name` - name of one of the images described in
    :code:`images:` section of your build configuration file
-   (:code:`build.yaml`). Basically this is the image you want to create.
+   (:code:`build.yaml`). Basically, this is the image you want to create.
 
  - :code:`-l`, :code:`--list-images` - list available images and their
-   descriptions. Please not that actual list of images can depend on
+   descriptions. Please note that the actual list of images can depend on
    build config parameter values. For example, your build config may
-   provide option to enable Android build. If this option is enabled,
-   you may have separate image for Android.
+   provide an option to enable Android build. If this option is enabled,
+   you may have a separate image for Android.
 
  - :code:`-f`, :code:`--force` - force overwrite existing file. If
-   this option is not give, `rouge` will refuse to create image if
-   output file is already exists.
+   this option is not given, `rouge` will refuse to create an image if
+   the output file already exists.
 
  - :code:`-s`, :code:`--special` - allow to write to a special file,
    like a block device. Without this option, `rouge` will refuse to
    write to, say, :code:`/dev/sda`. Use this option with care and
-   always double-check device name, as `rouge` will overwrite anything
+   always double-check the device name, as `rouge` will overwrite anything
    that is stored on that device.
 
- - :code:`-o` - provides output file name. This is optional parameter,
-   by default `rouge` will write to :code:`<image_name>.img`.
+ - :code:`-o` - provides output file name. This is an optional parameter,
+   by default, `rouge` will write to :code:`<image_name>.img`.
 
 
-Apart from this options, `rouge` will read and parse all YAML-file
-related parameters in the same way as `moulin` does. You can check
+Apart from these options, `rouge` will read and parse all YAML file-related
+parameters in the same way as `moulin` does. You can check
 available parameters with :code:`--help-config`.
 
 Principles of Operation
@@ -92,18 +92,18 @@ Principles of Operation
 
 `rouge` works in a very simple way. It uses `moulin`'s YAML processor
 that applies parameters and substitutes variables, then reads
-:code:`images:` section, finds requested image specification.
+:code:`images:` section, finds the requested image specification.
 
-For a given image it checks if all mentioned files are present, then
-calculates sizes of partitions (if any) and total image size. Then it
+For a given image, it checks if all mentioned files are present, then
+calculates the sizes of partitions (if any) and the total image size. Then it
 writes data to a given file/block device according to the
 specifications.
 
-`rouge` tries to use sparse files whenever possible. Sparse file is a
+`rouge` tries to use sparse files whenever possible. A sparse file is a
 file with "holes" in it. It allows you to have a huge file that
-represents whole disk image with tiny bit of actual information in
-it. This speeds up image creation process and decreases used disk
-space. If you are writing resulting image file to your SD card
+represents a whole disk image with a tiny bit of actual information in
+it. This speeds up the image creation process and decreases the used disk
+space. If you are writing the resulting image file to your SD card
 manually, try adding :code:`conv=sparse` option to your :code:`dd`
 command line. This will speed up the writing process. If you want to
 distribute resulting images, take a look at Intel's :code:`bmap`
@@ -144,17 +144,17 @@ Images are specified in the following way:
 
 
 :code:`images:` section contains one or more keys, which serve as
-image names. Every image can have description, which will be displayed
+image names. Every image can have a description, which will be displayed
 when `rouge` lists available images. :code:`type:` key is mandatory as
-it defines type of block. Supported block types as described in the
+it defines the type of block. Supported block types are described in the
 following sections.
 
-Also you may specify the required size of image using
-:code:`image_size:`. Please see section 'Size Designation' below for
-supported notation. If actual size of all partitions will be less than
+Also, you may specify the required size of the image using
+:code:`image_size:`. Please see the section 'Size Designation' below for
+supported notation. If the actual size of all partitions will be less than
 :code:`image_size:` then image will be blown up to :code:`image_size:`.
-If actual size is bigger than specified - error will be printed with
-explanation like "Actual size (20000) of image is bigger than requested
+If the actual size is bigger than specified, an error will be printed with
+an explanation like "Actual size (20000) of image is bigger than requested
 one (10000)."
 
 Block descriptions
@@ -167,15 +167,16 @@ are described below.
 Size Designation
 ^^^^^^^^^^^^^^^^
 
-All block have :code:`size` parameter. For some block types this
-parameter is mandatory, for some - optional. Basic unit for size is byte. For example
+All blocks have :code:`size` parameter. For some block types, this
+parameter is mandatory, for some - optional. The basic unit for size is a byte.
+For example
 
 .. code-block:: yaml
 
    type: empty
    size: 4096
 
-defines empty block with size of 4096 bytes. `rouge` supports some SI suffixes:
+defines an empty block with a size of 4096 bytes. `rouge` supports some SI suffixes:
 
  - :code:`KB` - kilobyte - 1000 bytes
  - :code:`MB` - megabyte - 1000 kilobytes or 1 000 000 bytes
@@ -184,19 +185,19 @@ defines empty block with size of 4096 bytes. `rouge` supports some SI suffixes:
  - :code:`MiB` - mebibyte - 1024 kibibytes or 1 048 576 bytes
  - :code:`GiB` - gibibyte - 1024 mebibytes or 1 073 741 824 bytes
 
-Suffix must be separated from number by space. For example:
-:code:`size: 4 MiB` defines size of 4 mebibytes or 4 194 304 bytes.
+The suffix must be separated from the number by a space. For example:
+:code:`size: 4 MiB` defines the size of 4 mebibytes or 4 194 304 bytes.
 
-On `sparse` option
+On the `sparse` option
 ^^^^^^^^^^^^^^^^^^
 
 Almost all block descriptions support boolean :code:`sparse` option,
 which is enabled by default. You can disable it to generate
-non-sparsed parts of a resulting images. This will create images that
+non-sparse parts of the resulting images. This will create images that
 are bigger while stored on disk, because they physically store all
 non-needed NUL regions. But this may be used in cases when you need to
-zero-out some regions on a flash storage. Bear in mind, that in this
-case you can't write result image with
+zero out some regions on flash storage. Bear in mind that in this
+case, you can't write the result image with
 
 .. code-block:: yaml
 
@@ -205,14 +206,14 @@ case you can't write result image with
 because with :code:`conv=sparse` option :code:`dd` will "un-sparse"
 the image file, effectively skipping big zeroed regions. So, you
 either need to remove :code:`conv=sparse` option when calling
-:code:`dd`, increasing writing time significantly or use
+:code:`dd`, increasing writing time significantly, or use
 :code:`bmaptool` which should be less aggressive with sparsed regions
 detection.
 
 Empty block
 ^^^^^^^^^^^
 
-Empty block is a block that does not contain any file or
+An empty block is a block that does not contain any file or
 raw image. `rouge` will write nothing into this block if
 :code:`filled: zeroes` option is not specified.
 
@@ -227,17 +228,17 @@ raw image. `rouge` will write nothing into this block if
 :code:`filled` is optional, with only `zeroes` value allowed for now.
 This option may be used if you need the block to be filled with zeroes.
 For example, this is used for some Android partitions, like 'rpmbemul'.
-Use this option only if you really need to. Otherwise you will needlessly
-increase size and upload time of an image.
+You can use this option only if absolutely necessary. Otherwise, you will
+needlessly increase the size and upload time of an image.
 
 .. _rouge-raw-image-block:
 
 Raw Image Block
 ^^^^^^^^^^^^^^^
 
-Purpose of this block type is to include any binary data from other
-file. For example, if your build system creates `.ext4` image with
-root file system, you can use this block to place that image into GPT
+The purpose of this block type is to include any binary data from another
+file. For example, if your build system creates a `.ext4` image with
+the root file system, you can use this block to place that image into a GPT
 partition (which is described below).
 
 .. code-block:: yaml
@@ -247,31 +248,31 @@ partition (which is described below).
    resize: false
    image_path: "some/path/rootfs.ext4"
 
-:code:`image_path` is mandatory. This is a file to be included into
+:code:`image_path` is mandatory. This is a file to be included in
 resulting image.
 
-:code:`size` is optional. If it is omitted, `rouge` will use size of
-file. If provided :code:`size` is smaller than file size, `rouge` will
+:code:`size` is optional. If it is omitted, `rouge` will use the size of
+the file. If provided :code:`size` is smaller than file size, `rouge` will
 stop with an error. If provided :code:`size` is bigger than file size,
 `rouge` will try to resize the file to match :code:`size`. This rule
 applies to ext2..ext4 format now.
 Note that host tools perform resizing, and you may meet some
 compatibility issues if the newer tools generate the ext4 image.
 For example, if the ext4 image is generated by the yocto scarthgap
-with e2fsprogs 1.47, then such image can be resized only on the host
+with e2fsprogs 1.47, then such an image can be resized only on the host
 with Ubuntu 23+. The lower versions of Ubuntu have e2fsprogs that
-can't resize such image.
+can't resize such an image.
 
 :code:`resize` is optional. If set to :code:`false`, it will prevent
 `rouge` from resizing the image to the size of the block. This is
 useful when you want to include a file that is smaller than the block
 and leave the rest of the block empty.
 
-:code:`sparse` is optional. If it set to to :code:`false`, raw image
-will be copied in non-sparse mode. This may increase final image
+:code:`sparse` is optional. If it is set to to :code:`false`, the raw image
+will be copied in non-sparse mode. This may increase the final image
 size on disk and processing time. Use this option only when absolutely
-necessary, i.e when some piece of software (like bootloader) depends
-on values in un-allocated sectors.
+necessary, i.e, when some piece of software (like a bootloader) depends
+on values in unallocated sectors.
 
 Android Sparse Image Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -285,25 +286,25 @@ Android Sparse image format.
    size: 3000 MiB
    image_path: "android/out/target/product/xenvm/userdata.img"
 
-:code:`image_path` is mandatory. This is a file to be included into
-resulting image. `rouge` will call :code:`simg2img2` tool to
+:code:`image_path` is mandatory. This is a file to be included in
+the resulting image. `rouge` will call :code:`simg2img2` tool to
 unpack it before writing it to a resulting image.
 
-:code:`size` is optional. If it is omitted, `rouge` will use data
-size, read from the file. If provided :code:`size` is smaller than
-read size, `rouge` will stop with an error. Thus, you can create block
-that is bigger than unpacked file, but not smaller.
+:code:`size` is optional. If it is omitted, `rouge` will use the data
+size read from the file. If provided :code:`size` is smaller than
+read size, `rouge` will stop with an error. Thus, you can create a block
+that is bigger than the unpacked file, but not smaller.
 
-:code:`sparse` is optional. If it set to to :code:`false`, Android
-sparsed image will be completely un-sparsed, up to creating a fully
+:code:`sparse` is optional. If it is set to :code:`false`, Android
+sparsed image will be completely unsparsed, up to creating a fully
 mapped file. It is seldom used, but it is added for completeness.
 
 Filesystem Image With Files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This block types allows you to create new filesystem with some
+This block type allows you to create a new filesystem with some
 files included from your disk. This is ideal for creating boot
-partitions, where you store kernel, initial ramdisk and so on.
+partitions, where you store the kernel, initial ramdisk, and so on.
 
 .. code-block:: yaml
 
@@ -321,36 +322,36 @@ currently `ext4` and `vfat` are supported.
 You need to install the `mtools` package to work with `vfat`.
 
 :code:`items:` section is optional. It defines :code:`remote:local`
-mapping of files that should be presented on newly created
-filesystem. :code:`remote` part is how the file will be named on new
+mapping of files that should be presented on the newly created
+filesystem. :code:`remote` part is how the file will be named on the new
 filesystem, while :code:`local` is a path on your disk.
 You can specify parent folders for :code:`remote` and these folders
 will be created on the destination filesystem.
-You may specify not only files but directories also. If the local
-directory contains subdirectories, they will be created unders the
+You may specify not only files but also directories. If the local
+directory contains subdirectories, they will be created under the
 :code:`remote` directory.
 Older versions of `rouge` used :code:`files:` as the name of the
 section. This name is still possible to use, but it is deprecated.
-Also only :code:`items:` can contain directories.
+Also, only :code:`items:` can contain directories.
 
-:code:`size` is optional. `rouge` will calculate total file size and
-add some space for the filesystem metadata to determine block size.
-You can increase size, if wish.
+:code:`size` is optional. `rouge` will calculate the total file size and
+add some space for the filesystem metadata to determine the block size.
+You can increase the size if you wish.
 
-:code:`sparse` is optional. If it set to to :code:`false`, filesystem
-image will be copied in non-sparse mode. This may increase final image
+:code:`sparse` is optional. If it is set to :code:`false`, the filesystem
+image will be copied in non-sparse mode. This may increase the final image
 size on disk and processing time. Use this option only when absolutely
-necessary, i.e when some piece of software (like bootloader) depends
-on values in un-allocated sectors.
+necessary, i.e, when some piece of software (like a bootloader) depends
+on values in unallocated sectors.
 
 GUID Partition Table (GPT) block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This block type defines GPT along with all partitions. In most cases
-this is will be your top-level block definition. It can (and should)
+This block type defines GPT along with all partitions. In most cases,
+this will be your top-level block definition. It can (and should)
 include other blocks, including other GPT. Inner GPT can come in handy
-in cases when you are creating image that holds data for multiple
-virtual machines and wish to provide VM with own GPT.
+in cases when you are creating an image that holds data for multiple
+virtual machines and wish to provide each VM with its own GPT.
 
 .. code-block:: yaml
 
@@ -367,51 +368,51 @@ virtual machines and wish to provide VM with own GPT.
        image_path: "rootfs.ext4"
 
 This example defines GPT with two partitions: :code:`boot` and
-:code:`rootfs`. :code:`boot` is empty block and :code:`rootfs`
+:code:`rootfs`. :code:`boot` is an empty block and :code:`rootfs`
 includes Raw Image block.
 
-:code:`partitions:` section is mandatory. It defines list of
-partitions, where key is a partition label.
+:code:`partitions:` section is mandatory. It defines a list of
+partitions, where the key is a partition label.
 
 :code:`hybrid_mbr` forces rouge to create a Hybrid MBR instead of
-default Protective MBR. Take note that this is experimental feature,
-as different OSes handle Hybrid MBR differently, in other words - this
+the default Protective MBR. Just so you know, this is an experimental feature,
+as different OSes handle Hybrid MBR differently; in other words, this
 type of MBR is not standardized and is not guaranteed to work on your
-setup. It is added mostly to enable support of older Raspberry PI
+setup. It is mainly added to enable support of older Raspberry PI
 models, whose bootloader can't parse GPT. When Hybrid MBR is enabled,
-first three partition entries should contain :code:`mbr_type` property
-with MBR Partitions type code. In most cases you will need
+the first three partition entries should contain :code:`mbr_type` property
+with MBR Partitions type code. In most cases, you will need
 :code:`0x0C` for FAT32 partitions and :code:`0x83` for Linux file
 systems.
 
-Each partition contains definition of other block type plus optional keys:
+Each partition contains the definition of another block type plus optional keys:
 
-:code:`gpt_type:` (which we strongly suggest to provide) key holds GPT Partition
-Type GUID. List of widely used types can be found on
+:code:`gpt_type:` (which we strongly suggest providing) key holds GPT Partition
+Type GUID. A list of widely used types can be found on
 `Wikipedia <https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs>`_,
 for example.
 
-:code:`gpt_guid:` key sets the GPT Partition GUID. By default this GUID is generated
-automatically to ensure that every partition in the world would have unique
-identifier. But there are some cases when external software depends on exact value
-of a partition GUID. In such cases it is possible to hard-code this value. We
-strongly recommend not to use this key except for the cases when this is neccessary
-because, accoding to the page 121 of
+:code:`gpt_guid:` key sets the GPT Partition GUID. By default, this GUID is generated
+automatically to ensure that every partition in the world would have a unique
+identifier. But there are some cases when external software depends on the exact value
+of a partition GUID. In such cases, it is possible to hard-code this value. We
+strongly recommend not to use this key except for the cases when this is necessary
+because, according to page 121 of
 `Specification <https://uefi.org/sites/default/files/resources/UEFI_Spec_2_8_final.pdf>`_
-the software that makes copied of GPT-formatted disks and partitions must generate
+the software that makes copies of GPT-formatted disks and partitions must generate
 new Unique Partition GUID in each GPT Partition Entry.
 
 :code:`sector_size` is a custom sector size, 512 by default, but some devices
-(e.g. fancy flash storage) might have a sector of different size.
+(e.g., fancy flash storage) might have a sector of a different size.
 This key allows tuning for such cases.
 
 :code:`mbr_type` is used only when :code:`hybrid_mbr` is set for the
-GPT block entry. It corresponds to MBR partition type byte. List of
+GPT block entry. It corresponds to the MBR partition type byte. A list of
 partition types can be found on `Wikipedia
 <https://en.wikipedia.org/wiki/Partition_type>`_.
 
-`rouge` will place partitions one after another, aligning partition
-start to 1 MiB (as per standard recommendation) and partition size to
+`rouge` will place partitions one after another, aligning each partition
+start at 1 MiB (as per standard recommendation) and partition size to
 sector size, which defaults to 512 bytes.
 
 Examples
@@ -431,7 +432,7 @@ The following example provides multiple different images:
        size: 32 MiB
 
      unpacked_userdata:
-       desc: "Unpacked android userspace image"
+       desc: "Unpacked Android userspace image"
        type: android_sparse
        image_path: "android/out/target/product/xenvm/userdata.img"
 
@@ -455,9 +456,9 @@ The following example provides multiple different images:
 ..
 
  - :code:`rouge sample_images.yaml -i empty_image` will generate just
-   and empty file. This is the simplest example.
+   an empty file. This is the simplest example.
  - :code:`rouge sample_images.yaml -i unpacked_userdata` will use
-   `simg2img` to unpack android userdata image.
+   `simg2img` to unpack Android userdata image.
  - :code:`rouge sample_images.yaml -i unpacked_userdata` will generate
-   sort or usable image with two GPT partitions: one with data for
-   bootloader, and other will contain ext4 root image created by Yocto.
+   a sort of usable image with two GPT partitions: one with data for
+   the bootloader, and the other will contain an ext4 root image created by Yocto.
