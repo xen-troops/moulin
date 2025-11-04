@@ -279,7 +279,7 @@ class FileSystem(BlockEntry):
 
         files_node = self._node.get("files", None)
         if files_node:
-            log.warn("Usage of 'files' is deprecated. Use 'items' please.")
+            log.warning("Usage of 'files' is deprecated. Use 'items' please.")
             for remote_name, local_node in cast(YamlValue, files_node).items():
                 self._items.append((remote_name, local_node.as_str, local_node.mark))
 
@@ -377,7 +377,7 @@ class Vfat(FileSystem):
                     for filename in filenames:
                         # we skip symlinks as not supported on vfat
                         if os.path.islink(os.path.join(dirpath, filename)):
-                            log.warn("Symlink '%s' is skipped.", os.path.join(dirpath, filename))
+                            log.warning("Symlink '%s' is skipped.", os.path.join(dirpath, filename))
                         else:
                             out_list.append([os.path.join(remote_dirpath, filename),
                                              os.path.join(dirpath, filename), mark])

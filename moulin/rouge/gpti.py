@@ -78,7 +78,7 @@ def create_mbr(partitions: List[Any]):
     # Count partitions
     part_count = len(partitions)
     if part_count > 3:
-        log.warn(
+        log.warning(
             f"There are {part_count} partitions in the partition table, but Hybrid MBR will contain only first 3"
         )
 

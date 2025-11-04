@@ -71,7 +71,7 @@ def _get_conf_file(conf_location: str) -> str:
         local_filename = os.path.basename(unquote(parsed_url.path))
         if os.path.exists(local_filename):
             # preserve possible local changes
-            log.warn("Local copy already exists. Nothing has been downloaded.")
+            log.warning("Local copy already exists. Nothing has been downloaded.")
         else:
             log.info("Downloading from URL...")
             urllib.request.urlretrieve(conf_location, local_filename)
