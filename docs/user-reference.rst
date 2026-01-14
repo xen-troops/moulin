@@ -417,11 +417,13 @@ in the next subsections.
 yocto builder
 ^^^^^^^^^^^^^
 
-Yocto builder is used to build OpenEmbedded-based images. It expects
-that `poky` repository is cloned in :code:`{build_dir}/poky` and uses
-it's :code:`poky/oe-init-build-env` script to initialize build
-environment. Then :code:`bitbake-layers` tool is used to add
-additional layers and :code:`bitbake` used to perform the build.
+Yocto builder is used to build OpenEmbedded-based images. It supports two Yocto
+distributions: `poky` and `openembedded-core`. It expects that `poky`
+repository is cloned in :code:`{build_dir}/poky` whereas
+`openembedded-core` is cloned in :code:`{build_dir}/openembedded-core` and uses
+its :code:`oe-init-build-env` script to initialize build environment. Then
+:code:`bitbake-layers` tool is used to add additional layers and :code:`bitbake`
+used to perform the build.
 
 .. code-block:: yaml
 
@@ -429,6 +431,7 @@ additional layers and :code:`bitbake` used to perform the build.
     type: yocto       # Should be `yocto`
     work_dir: "build" # Optional
     build_target: core-image-minimal # Mandatory
+    distro: openembedded # Optional, default is `poky`
     conf:             # Mandatory
       - [MACHINE, "machine-name"]
       - [DISTRO_FEATURES_remove, "feature_to_remove"]
@@ -476,6 +479,10 @@ needed if you are building multiple VMs with cross-dependencies.
   "build". This is where files like "conf/local.conf" are stored. You
   can overwrite so you can produce multiple builds from the same (or
   different) set of Yocto layers.
+
+* :code:`distro` - Yocto distribution. Supported values are
+  :code:`poky` and :code:`openembedded`. The default value is
+  :code:`poky`.
 
 * :code:`additional_deps` - list of additional dependencies. This is
   basically :code:`target_images` produced by other components. You

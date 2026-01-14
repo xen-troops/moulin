@@ -33,7 +33,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     # Create build dir by calling poky/oe-init-build-env script
     cmd = " && ".join([
         "cd $yocto_dir",
-        "source poky/oe-init-build-env $work_dir",
+        "source $init_script $work_dir",
     ])
     generator.rule("yocto_init_env",
                    command=f'bash -c "{cmd}"',
@@ -44,7 +44,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     # Add bitbake layers by calling bitbake-layers script
     cmd = " && ".join([
         "cd $yocto_dir",
-        "source poky/oe-init-build-env $work_dir",
+        "source $init_script $work_dir",
         "bitbake-layers add-layer $layers",
         "touch $out",
     ])
@@ -76,7 +76,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         # Generate fetcher dependency file
         construct_fetcher_dep_cmd(),
         "cd $yocto_dir",
-        "source poky/oe-init-build-env $work_dir",
+        "source $init_script $work_dir",
         "bitbake $target",
     ])
     generator.rule("yocto_build",
@@ -189,6 +189,11 @@ class YoctoBuilder:
         #   directories. It is called "build" by default
         self.yocto_dir = build_dir
         self.work_dir: str = conf.get("work_dir", "build").as_str
+        self.distro = conf.get("distro", "poky").as_str
+        if self.distro not in ("poky", "openembedded"):
+            raise ValueError(
+                f"Unsupported Yocto distro '{self.distro}'. Supported distros are: 'poky', 'openembedded'."
+            )
 
     def _get_external_src(self) -> List[Tuple[str, str]]:
         external_src_node = self.conf.get("external_src", None)
@@ -211,6 +216,8 @@ class YoctoBuilder:
         common_variables = {
             "yocto_dir": self.yocto_dir,
             "work_dir": self.work_dir,
+            "init_script": "poky/oe-init-build-env" if self.distro == "poky"
+            else "openembedded-core/oe-init-build-env",
         }
 
         # First we need to ensure that "conf" dir exists
@@ -233,7 +240,10 @@ class YoctoBuilder:
         layers_node = self.conf.get("layers", None)
         if layers_node:
             layers_stamp = create_stamp_name(self.yocto_dir, self.work_dir, "yocto", "layers")
-            layers = " ".join(_filter_yocto_core_layers(_flatten_layers(layers_node)))
+            layers_list = _flatten_layers(layers_node)
+            if self.distro == "poky":
+                layers_list = _filter_yocto_core_layers(layers_list)
+            layers = " ".join(layers_list)
             self.generator.build(layers_stamp,
                                  "yocto_add_layers",
                                  env_target,
