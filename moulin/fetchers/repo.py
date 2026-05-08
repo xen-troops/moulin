@@ -62,6 +62,9 @@ class RepoFetcher:
         groups = self.conf.get("groups", "").as_str
         if groups:
             repo_args.append(f"-g {groups}")
+        git_lfs = self.conf.get("git_lfs", False).as_bool
+        if git_lfs:
+            repo_args.append(f"--git-lfs")
 
         init_target = os.path.join(self.repo_dir, ".repo")
         sync_stamp = create_stamp_name(self.build_dir, self.url, "sync")
