@@ -340,6 +340,8 @@ list of supported options:
   code storage. If it is missing, `moulin` will use :code:`"."` to
   initialize `repo` repository right in the component's build directory,
   as this is a main `repo` use case.
+* :code:`git_lfs` - optional - set to true to enable git-lfs. Corresponds to `repo`'s --git-lfs init
+  option.
 
 
 http fetcher
