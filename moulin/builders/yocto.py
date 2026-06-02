@@ -14,7 +14,7 @@ from moulin.yaml_helpers import YAMLProcessingError
 import logging
 
 
-YOCTO_CORE_LAYERS = ["../poky/meta", "../poky/meta-poky", "../poky/meta-yocto-bsp"]
+YOCTO_CORE_LAYERS = ["../poky/meta", "../poky/meta-poky", "../poky/meta-yocto-bsp", "../openembedded-core/meta"]
 log = logging.getLogger(__name__)
 
 
@@ -33,7 +33,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     # Create build dir by calling poky/oe-init-build-env script
     cmd = " && ".join([
         "cd $yocto_dir",
-        "source poky/oe-init-build-env $work_dir",
+        "source $distro_dir/oe-init-build-env $work_dir",
     ])
     generator.rule("yocto_init_env",
                    command=f'bash -c "{cmd}"',
@@ -44,7 +44,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     # Add bitbake layers by calling bitbake-layers script
     cmd = " && ".join([
         "cd $yocto_dir",
-        "source poky/oe-init-build-env $work_dir",
+        "source $distro_dir/oe-init-build-env $work_dir",
         "bitbake-layers add-layer $layers",
         "touch $out",
     ])
@@ -76,7 +76,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         # Generate fetcher dependency file
         construct_fetcher_dep_cmd(),
         "cd $yocto_dir",
-        "source poky/oe-init-build-env $work_dir",
+        "source $distro_dir/oe-init-build-env $work_dir",
         "bitbake $target",
     ])
     generator.rule("yocto_build",
@@ -142,6 +142,11 @@ By default, Poky adds the following layers:
 "meta-poky"
 "meta-yocto-bsp"
 
+Newer version of OpenEmbedded shuffled layers a bit
+and now we don't have "poky" dir at all, but we still have
+
+"openembedded-core/meta"
+
 For more details, you can find information about it here:
 https://github.com/yoctoproject/poky/blob/807831067405a465886593df4e3057d3846a0001/documentation/
 migration-guides/migration-1.3.rst#bblayersconf
@@ -184,11 +189,12 @@ class YoctoBuilder:
         # With yocto builder it is possible to have multiple builds with the same set of
         # layers. Thus, we have two variables - build_dir and work_dir
         # - yocto_dir is the upper directory where layers are stored. Basically, we should
-        #   have "poky" in our yocto_dir
+        #   have core layers  in our yocto_dir
         # - work_dir is the build directory where we can find conf/local.conf, tmp and other
         #   directories. It is called "build" by default
         self.yocto_dir = build_dir
         self.work_dir: str = conf.get("work_dir", "build").as_str
+        self.base_distro: str = conf.get("base_distro", "poky").as_str
 
     def _get_external_src(self) -> List[Tuple[str, str]]:
         external_src_node = self.conf.get("external_src", None)
@@ -211,6 +217,7 @@ class YoctoBuilder:
         common_variables = {
             "yocto_dir": self.yocto_dir,
             "work_dir": self.work_dir,
+            "distro_dir": self.base_distro,
         }
 
         # First we need to ensure that "conf" dir exists

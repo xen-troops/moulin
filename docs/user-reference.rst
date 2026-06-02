@@ -427,6 +427,7 @@ additional layers and :code:`bitbake` used to perform the build.
 
   builder:
     type: yocto       # Should be `yocto`
+    base_distro: poky # Optional
     work_dir: "build" # Optional
     build_target: core-image-minimal # Mandatory
     conf:             # Mandatory
@@ -459,6 +460,12 @@ Mandatory options:
 
 Optional parameters. Those provide advanced features that may be
 needed if you are building multiple VMs with cross-dependencies.
+
+* :code:`base_distro` - provides name of base distro
+  directory. Default value is :code:`poky` for compatibility reasons.
+  For newer Yocto releases you want to use :code:`openembedded-core`.
+  Currently this only affects location of :code:`oe-init-build-env`
+  script.
 
 * :code:`conf` - list of additional :code:`local.conf` options. Please
   note that each entry in :code:`conf` list is not a :code:`key:value`
