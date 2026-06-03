@@ -45,7 +45,7 @@ class ArchiveBuilder:
 
     def gen_build(self):
         """Generate ninja rules to create archive"""
-        items_for_tar = [x.as_str for x in self.conf["items"]]
+        items_for_tar = [x.as_str for x in self.conf["items"].flattened_list()]
         base_dir = self.conf.get("base_dir", ".").as_str
         # Items are intended to be used by tar, and contains path
         # relative to `base_dir`. But to provide correct dependencies
