@@ -199,6 +199,21 @@ class YamlValue:  # pylint: disable=too-few-public-methods
             raise YAMLProcessingError("Mapping node is expected", self.mark)
         return [(key.value, YamlValue(val)) for key, val in self._node.value]
 
+    def flattened_list(self) -> List["YamlValue"]:
+        """
+        Treat node as as SequenceNode that contains YamlValue or
+        other SequenceNode, recuresively flatten the latter.
+        """
+        if not isinstance(self._node, SequenceNode):
+            raise YAMLProcessingError("SequenceNode node is expected", self.mark)
+        ret: List["YamlValue"] = []
+        for item in self._node.value:
+            if isinstance(item, SequenceNode):
+                ret.extend(YamlValue(item).flattened_list())
+            else:
+                ret.append(YamlValue(item))
+        return ret
+
     def __getitem__(self, idx: Union[str, int]) -> "YamlValue":
         if isinstance(idx, int):
             if not isinstance(self._node, SequenceNode):
