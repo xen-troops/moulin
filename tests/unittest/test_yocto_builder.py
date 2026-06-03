@@ -131,3 +131,62 @@ components:
                 break
         else:
             self.fail("Could not find yocto_build target")
+
+    def test_default_deps(self):
+        doc = """
+desc: "Test build"
+components:
+  test:
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      conf:
+      target_images:
+        - "target-image"
+    sources:
+      - type: "null"
+        """
+        node = yaml.compose(doc)
+        conf = MoulinConfiguration(node)
+        generate_build(conf, "test.yaml")
+        # Find build call and analyze variables
+        for call in self.Writer.return_value.build.call_args_list:
+            if call.args[1] == 'yocto_init_env':
+                self.assertListEqual(call.args[2], ["null.stamp"])
+                break
+        else:
+            self.fail("Could not find yocto_init_env target")
+
+    def test_additional_deps_expansion(self):
+        doc = """
+desc: "Test build"
+common_data:
+  common_deps: &COMMON_DEPS
+    - "common_dep_1"
+    - "common_dep_2"
+components:
+  test:
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      conf:
+      target_images:
+        - "target-image"
+      additional_deps:
+        - "explicit-dep"
+        - *COMMON_DEPS
+    sources:
+      - type: "null"
+        """
+        node = yaml.compose(doc)
+        conf = MoulinConfiguration(node)
+        generate_build(conf, "test.yaml")
+        # Find build call and analyze variables
+        for call in self.Writer.return_value.build.call_args_list:
+            if call.args[1] == 'yocto_init_env':
+                self.assertListEqual(
+                    call.args[2],
+                    ["null.stamp", "test/explicit-dep", "test/common_dep_1", "test/common_dep_2"])
+                break
+        else:
+            self.fail("Could not find yocto_init_env target")
