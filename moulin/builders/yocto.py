@@ -229,7 +229,7 @@ class YoctoBuilder:
                 os.path.normpath(
                     os.path.join(self.yocto_dir, d.as_str)
                 )
-                for d in additional_deps_node
+                for d in additional_deps_node.flattened_list()
             )
         self.generator.build(env_target,
                              "yocto_init_env",
