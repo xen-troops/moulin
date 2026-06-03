@@ -98,3 +98,36 @@ components:
                 break
         else:
             self.fail("Could not find yocto_build target")
+
+    def test_target_images_expansion(self):
+        doc = """
+desc: "Test build"
+common_data:
+  common_target_images: &COMMON_TARGET_IMAGES
+    - "common_image_1"
+    - "common_image_2"
+components:
+  test:
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      conf:
+      target_images:
+        - "target-image"
+        - *COMMON_TARGET_IMAGES
+    sources:
+      - type: "null"
+        """
+        node = yaml.compose(doc)
+        conf = MoulinConfiguration(node)
+        generate_build(conf, "test.yaml")
+        # Find build call and analyze variables
+        for call in self.Writer.return_value.build.call_args_list:
+            if call.args[1] == 'yocto_build':
+                self.assertListEqual(call.args[0], [
+                    "test/build/target-image", "test/build/common_image_1",
+                    "test/build/common_image_2"
+                ])
+                break
+        else:
+            self.fail("Could not find yocto_build target")
