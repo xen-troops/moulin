@@ -1,0 +1,15 @@
+desc: "Test west fetcher git options"
+min_ver: "0.20"
+
+components:
+  test:
+    build-dir: workspace
+    builder:
+      type: "null"
+    sources:
+      - type: west
+        url: "%{MANIFEST_REPO_URL}"
+        rev: main
+        file: west.yml
+        git_options:
+          - "--depth=1"

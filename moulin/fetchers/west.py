@@ -67,6 +67,8 @@ class WestFetcher:
         filename = self.conf.get("file", "").as_str
         if filename:
             west_args.append(f"--mf {shlex.quote(filename)}")
+        for option in self.conf.get("git_options", []):
+            west_args.append(f"-o={shlex.quote(option.as_str)}")
 
         init_target = os.path.join(self.build_dir, ".west")
         update_target = create_stamp_name(self.build_dir, "update")
