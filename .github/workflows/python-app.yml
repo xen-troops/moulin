@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip3 install flake8 pytest pyaml
+        pip3 install flake8 pytest pyaml west
         # Needed by pygit package
         sudo apt-get install python3-pygit2
         # Needed by moulin integration tests

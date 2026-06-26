@@ -371,6 +371,8 @@ Complete list of supported options:
   url: https://manifest.address/zephyr
   rev: manifest-revision
   file: manifest-file.yml
+  git_options:
+    - "--depth=1"
 
 * :code:`type` - mandatory - should be :code:`west` to enable `west` fetcher.
 * :code:`url` - optional - manifest repository URL. You can provide
@@ -380,6 +382,10 @@ Complete list of supported options:
   :code:`--mr` option.
 * :code:`file` - optional - manifest file name. Corresponds to `west init`'s
   :code:`--mf` option.
+* :code:`git_options` - optional - list of additional git clone options for
+  the manifest repository. Each list item is passed to :code:`west init` as
+  a separate :code:`-o` option. For example, :code:`"--depth=1"` produces
+  :code:`west init ... -o=--depth=1`.
 
 For additional details, see documentation on `west init`:
 https://docs.zephyrproject.org/latest/develop/west/built-in.html#west-init
