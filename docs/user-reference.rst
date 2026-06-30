@@ -63,7 +63,16 @@ files for Ninja, so Ninja can track changes inside components.
 :code:`dependency_policy` and writes the selected dependency set after a
 successful build command.
 
-This option is not meant to be used by a user.
+There is also a family of internal :code:`--utility-*` command-line
+options. These options are hidden from the :code:`-h` output and are
+used internally by `moulin` to invoke builder-specific utility
+handlers.
+
+For example, :code:`--utility-builders-yocto` is used by the Yocto
+builder to synchronize the active BitBake layer configuration with
+the layer list defined in the Moulin YAML manifest.
+
+These options are not meant to be used by a user.
 
 YAML sections
 -------------
@@ -472,8 +481,9 @@ yocto builder
 Yocto builder is used to build OpenEmbedded-based images. It expects
 that `poky` repository is cloned in :code:`{build_dir}/poky` and uses
 it's :code:`poky/oe-init-build-env` script to initialize build
-environment. Then :code:`bitbake-layers` tool is used to add
-additional layers and :code:`bitbake` used to perform the build.
+environment. Then Moulin synchronizes the active BitBake layer
+configuration with the layer list defined in the YAML file, and
+:code:`bitbake` is used to perform the build.
 
 .. code-block:: yaml
 
@@ -527,9 +537,12 @@ needed if you are building multiple VMs with cross-dependencies.
   :code:`local.conf`. Instead, a new file :code:`moulin.conf` will be
   created. This file will then be included from :code:`local.conf`.
 
-* :code:`layers` - list of additional layers. Those layers will be
-  added to the build using :code:`bitbake-layers add-layer {layers}`
-  command.
+* :code:`layers` - list of layers managed by Moulin for this Yocto
+  build. Moulin synchronizes the active BitBake layer configuration
+  with this list: it adds missing layers, removes layers that were
+  previously managed by Moulin but are no longer listed, and reorders
+  managed layers when needed. Layers not managed by Moulin are left
+  untouched.
 
 * :code:`work_dir` - `bitbake`'s work directory. The default value is
   "build". This is where files like "conf/local.conf" are stored. You
