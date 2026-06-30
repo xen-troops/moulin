@@ -373,6 +373,7 @@ Complete list of supported options:
   file: manifest-file.yml
   git_options:
     - "--depth=1"
+  group_filter: "-group1,+group2"
 
 * :code:`type` - mandatory - should be :code:`west` to enable `west` fetcher.
 * :code:`url` - optional - manifest repository URL. You can provide
@@ -386,6 +387,22 @@ Complete list of supported options:
   the manifest repository. Each list item is passed to :code:`west init` as
   a separate :code:`-o` option. For example, :code:`"--depth=1"` produces
   :code:`west init ... -o=--depth=1`.
+* :code:`group_filter` - optional - west group filter expression or list of
+  expressions. Items are joined with commas and stored as
+  :code:`manifest.group-filter` in the west workspace before
+  :code:`west update` is executed. For example, :code:`"-group1,+group2"`
+  produces :code:`manifest.group-filter=-group1,+group2`. Both scalar string
+  and YAML list forms are supported:
+
+  .. code-block:: yaml
+
+    group_filter: "-group1,+group2"
+
+  .. code-block:: yaml
+
+    group_filter:
+      - "-group1"
+      - "+group2"
 
 For additional details, see documentation on `west init`:
 https://docs.zephyrproject.org/latest/develop/west/built-in.html#west-init

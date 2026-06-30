@@ -35,6 +35,9 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     # See `west help update` for additional info.
     cmd = " && ".join([
         "cd $build_dir",
+        "if [ -n \"$group_filter\" ]; then "
+        "west config manifest.group-filter \"$group_filter\"; "
+        "else west config -d --local manifest.group-filter || true; fi",
         "west update -n",
         "touch $out",
     ])
@@ -69,6 +72,11 @@ class WestFetcher:
             west_args.append(f"--mf {shlex.quote(filename)}")
         for option in self.conf.get("git_options", []):
             west_args.append(f"-o={shlex.quote(option.as_str)}")
+        group_filter_node = self.conf.get("group_filter", "")
+        if group_filter_node.is_list:
+            group_filter = ",".join([group.as_str for group in group_filter_node])
+        else:
+            group_filter = group_filter_node.as_str
 
         init_target = os.path.join(self.build_dir, ".west")
         update_target = create_stamp_name(self.build_dir, "update")
@@ -85,7 +93,8 @@ class WestFetcher:
                              "west_update",
                              init_target,
                              variables={
-                                 "build_dir": self.build_dir
+                                 "build_dir": self.build_dir,
+                                 "group_filter": group_filter,
                              })
         self.generator.newline()
 
