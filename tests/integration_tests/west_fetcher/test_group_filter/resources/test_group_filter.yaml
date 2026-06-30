@@ -1,0 +1,14 @@
+desc: "Test west fetcher group filter"
+min_ver: "0.20"
+
+components:
+  test:
+    build-dir: workspace
+    builder:
+      type: "null"
+    sources:
+      - type: west
+        url: "%{MANIFEST_REPO_URL}"
+        rev: main
+        file: west.yml
+%{GROUP_FILTER}
