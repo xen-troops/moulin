@@ -167,6 +167,8 @@ Apart from two mandatory options, component description can contain the followin
   If :code:`build_files` or :code:`all_files` is selected for a builder that
   does not support build file reporting, `moulin` rejects the configuration
   before writing :code:`build.ninja` or starting any component build command.
+  At the moment builder-reported dependencies are supported only by the
+  `zephyr builder`_.
 
 Variables
 ^^^^^^^^^
@@ -786,6 +788,14 @@ Optional parameters:
 
 * :code:`vars` - list of additional variables that should be passed to CMake
   via :code:`west build`.
+
+Zephyr builder is currently the only builder that supports builder-derived
+dependency tracking. When a component uses
+:code:`dependency_policy: build_files` or
+:code:`dependency_policy: all_files`, `moulin` records the files selected by
+the Zephyr build after :code:`west build` finishes. This includes compiler
+inputs and discovered headers, CMake configure inputs reported by Ninja, and
+the top-level west manifest, regardless of where those files are located.
 
 Please note that this builder uses :code:`--pristine=auto` command-line option.
 
