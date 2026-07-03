@@ -1,0 +1,3 @@
+# Intentionally empty placeholder.
+# The test only needs this file to exist so it can be packed into source.tar
+# and reported as a fetched dependency for the 'all_files' deps policy.
