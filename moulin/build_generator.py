@@ -5,6 +5,7 @@ This module takes processed YAML config tree (with variables expanded
 and parameters applied) and produces Ninja build file
 """
 
+import io
 import os.path
 import sys
 from dataclasses import dataclass
@@ -39,6 +40,7 @@ class DependencyContext:
     fetcher_modules: Dict[str, ModuleType]
     get_build_file_list: Optional[BuildFileListGetter]
     targets: List[str]
+    generator: ninja_syntax.Writer
 
 
 def generate_build(conf: MoulinConfiguration,
@@ -129,9 +131,8 @@ def _get_dependency_context(conf: MoulinConfiguration, component: str) -> Depend
     builder_node = component_node["builder"]
     builder_type = builder_node["type"].as_str
     builder_module = builder_modules[builder_type]
-    # Dependency-only mode does not generate Ninja rules. Builders that provide
-    # dependency metadata must keep that path independent from rule generation.
-    builder = builder_module.get_builder(builder_node, component, build_dir, [], None)
+    generator = _create_discarding_generator()
+    builder = builder_module.get_builder(builder_node, component, build_dir, [], generator)
 
     targets = builder.get_targets()
     return DependencyContext(build_dir=build_dir,
@@ -139,7 +140,8 @@ def _get_dependency_context(conf: MoulinConfiguration, component: str) -> Depend
                              builder_type=builder_type,
                              fetcher_modules=fetcher_modules,
                              get_build_file_list=_get_build_file_list_getter(builder),
-                             targets=targets)
+                             targets=targets,
+                             generator=generator)
 
 
 def _get_fetcher_file_list(deps_context: DependencyContext) -> List[str]:
@@ -149,9 +151,9 @@ def _get_fetcher_file_list(deps_context: DependencyContext) -> List[str]:
         for source in component_node["sources"]:
             source_type = source["type"].as_str
             fetcher_module = deps_context.fetcher_modules[source_type]
-            # Dependency-only mode does not generate Ninja rules. Fetchers that
-            # expose get_file_list must make that method independent from generator.
-            fetcher = fetcher_module.get_fetcher(source, deps_context.build_dir, None)
+            fetcher = fetcher_module.get_fetcher(source,
+                                                 deps_context.build_dir,
+                                                 deps_context.generator)
             # Keep this as a runtime guard for direct internal --dep calls.
             _ensure_fetcher_file_support(fetcher, source_type, source)
             deps.extend(fetcher.get_file_list())
@@ -208,13 +210,16 @@ def _validate_dependency_configuration(conf: MoulinConfiguration,
         builder_node = component_node["builder"]
         builder_type = builder_node["type"].as_str
         builder_module = builder_modules[builder_type]
-        builder = builder_module.get_builder(builder_node, component_name, build_dir, [], None)
+        generator = _create_discarding_generator()
+        builder = builder_module.get_builder(builder_node, component_name, build_dir, [],
+                                             generator)
         deps_context = DependencyContext(build_dir=build_dir,
                                          component_node=component_node,
                                          builder_type=builder_type,
                                          fetcher_modules=fetcher_modules,
                                          get_build_file_list=_get_build_file_list_getter(builder),
-                                         targets=builder.get_targets())
+                                         targets=builder.get_targets(),
+                                         generator=generator)
         policy = _get_dependency_policy(component_node)
         if policy in (DependencyPolicy.BUILD_FILES, DependencyPolicy.ALL_FILES):
             _ensure_build_file_support(deps_context.get_build_file_list,
@@ -231,7 +236,9 @@ def _ensure_fetcher_file_support_for_component(deps_context: DependencyContext) 
     for source in component_node["sources"]:
         source_type = source["type"].as_str
         fetcher_module = deps_context.fetcher_modules[source_type]
-        fetcher = fetcher_module.get_fetcher(source, deps_context.build_dir, None)
+        fetcher = fetcher_module.get_fetcher(source,
+                                             deps_context.build_dir,
+                                             deps_context.generator)
         _ensure_fetcher_file_support(fetcher, source_type, source)
 
 
@@ -253,6 +260,10 @@ def _write_dyndep(component: str, targets: List[str], deps: List[str]) -> None:
     with open(f".moulin_{component}.d", 'w') as stream:
         generator = make_syntax.Writer(stream, width=120)
         generator.simple_dep(targets, sorted(set(deps)))
+
+
+def _create_discarding_generator() -> ninja_syntax.Writer:
+    return ninja_syntax.Writer(io.StringIO(), width=120)
 
 
 def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
