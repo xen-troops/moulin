@@ -8,25 +8,36 @@ and parameters applied) and produces Ninja build file
 import os.path
 import sys
 from dataclasses import dataclass
+from enum import Enum
 from types import ModuleType
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, cast, Dict, List, Optional, Tuple
 
 from importlib import import_module
 from moulin import ninja_syntax
 from moulin import make_syntax
 from moulin import rouge
 from moulin import yaml_helpers as yh
+from moulin.yaml_helpers import YAMLProcessingError
 from moulin.build_conf import MoulinConfiguration
 from moulin.yaml_wrapper import YamlValue
 
 BUILD_FILENAME = 'build.ninja'
+BuildFileListGetter = Callable[[], List[str]]
+
+
+class DependencyPolicy(Enum):
+    FETCHED_FILES = "fetched_files"
+    BUILD_FILES = "build_files"
+    ALL_FILES = "all_files"
 
 
 @dataclass
 class DependencyContext:
     build_dir: str
     component_node: YamlValue
+    builder_type: str
     fetcher_modules: Dict[str, ModuleType]
+    get_build_file_list: Optional[BuildFileListGetter]
     targets: List[str]
 
 
@@ -36,6 +47,12 @@ def generate_build(conf: MoulinConfiguration,
     """
     Write Ninja build file based on pre-processed config tree
     """
+    _flatten_sources(conf)
+    # Validate dependency tracking before touching build.ninja, so an invalid
+    # policy cannot leave a partially generated build file behind.
+    builder_modules, fetcher_modules = _get_modules(conf, None)
+    _validate_dependency_configuration(conf, builder_modules, fetcher_modules)
+
     generator = ninja_syntax.Writer(open(ninja_build_fname, 'w'), width=120)
 
     generator.variable("ninja_required_version", "1.10")
@@ -44,7 +61,6 @@ def generate_build(conf: MoulinConfiguration,
 
     rouge.gen_build_rules(generator)
 
-    _flatten_sources(conf)
     # We want to have all Ninja build rules before all actual build
     # commands. So we need to scan conf twice. On the first scan we will
     # determine and load all required plugins. On the same time, we'll ask them
@@ -87,11 +103,22 @@ def generate_build(conf: MoulinConfiguration,
     rouge.gen_build(generator, rouge.get_available_images(conf.get_root()))
 
 
-def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
+def generate_component_dyndep(conf: MoulinConfiguration, component: str) -> None:
     _flatten_sources(conf)
 
     deps_context = _get_dependency_context(conf, component)
-    deps = _get_fetcher_file_list(deps_context)
+    policy = _get_dependency_policy(deps_context.component_node)
+
+    if policy in (DependencyPolicy.BUILD_FILES, DependencyPolicy.ALL_FILES):
+        _ensure_build_file_support(deps_context.get_build_file_list,
+                                   deps_context.builder_type,
+                                   deps_context.component_node)
+
+    deps: List[str] = []
+    if policy in (DependencyPolicy.FETCHED_FILES, DependencyPolicy.ALL_FILES):
+        deps.extend(_get_fetcher_file_list(deps_context))
+    if policy in (DependencyPolicy.BUILD_FILES, DependencyPolicy.ALL_FILES):
+        deps.extend(_get_builder_file_list(deps_context))
     _write_dyndep(component, deps_context.targets, deps)
 
 
@@ -109,7 +136,9 @@ def _get_dependency_context(conf: MoulinConfiguration, component: str) -> Depend
     targets = builder.get_targets()
     return DependencyContext(build_dir=build_dir,
                              component_node=component_node,
+                             builder_type=builder_type,
                              fetcher_modules=fetcher_modules,
+                             get_build_file_list=_get_build_file_list_getter(builder),
                              targets=targets)
 
 
@@ -123,8 +152,101 @@ def _get_fetcher_file_list(deps_context: DependencyContext) -> List[str]:
             # Dependency-only mode does not generate Ninja rules. Fetchers that
             # expose get_file_list must make that method independent from generator.
             fetcher = fetcher_module.get_fetcher(source, deps_context.build_dir, None)
+            # Keep this as a runtime guard for direct internal --dep calls.
+            _ensure_fetcher_file_support(fetcher, source_type, source)
             deps.extend(fetcher.get_file_list())
     return deps
+
+
+def _get_builder_file_list(deps_context: DependencyContext) -> List[str]:
+    get_build_file_list = _ensure_build_file_support(
+        deps_context.get_build_file_list,
+        deps_context.builder_type,
+        deps_context.component_node)
+    return get_build_file_list()
+
+
+def _get_build_file_list_getter(builder: object) -> Optional[BuildFileListGetter]:
+    get_build_file_list = getattr(builder, "get_build_file_list", None)
+    if callable(get_build_file_list):
+        return cast(BuildFileListGetter, get_build_file_list)
+    return None
+
+
+def _ensure_build_file_support(
+        get_build_file_list: Optional[BuildFileListGetter],
+        builder_type: str,
+        component_node: YamlValue,
+) -> BuildFileListGetter:
+    if get_build_file_list is None:
+        raise YAMLProcessingError(
+            f"Builder '{builder_type}' does not support "
+            "dependency_policy values that require build files",
+            component_node.mark)
+    return get_build_file_list
+
+
+def _ensure_fetcher_file_support(
+        fetcher: object,
+        fetcher_type: str,
+        source_node: YamlValue,
+) -> None:
+    get_file_list = getattr(fetcher, "get_file_list", None)
+    if not get_file_list:
+        raise YAMLProcessingError(
+            f"Fetcher '{fetcher_type}' does not support "
+            "dependency_policy values that require fetched files",
+            source_node.mark)
+
+
+def _validate_dependency_configuration(conf: MoulinConfiguration,
+                                       builder_modules: Dict[str, ModuleType],
+                                       fetcher_modules: Dict[str, ModuleType]) -> None:
+    root = conf.get_root()
+    for component_name, component_node in root["components"].items():
+        build_dir = component_node.get("build-dir", component_name).as_str
+        builder_node = component_node["builder"]
+        builder_type = builder_node["type"].as_str
+        builder_module = builder_modules[builder_type]
+        builder = builder_module.get_builder(builder_node, component_name, build_dir, [], None)
+        deps_context = DependencyContext(build_dir=build_dir,
+                                         component_node=component_node,
+                                         builder_type=builder_type,
+                                         fetcher_modules=fetcher_modules,
+                                         get_build_file_list=_get_build_file_list_getter(builder),
+                                         targets=builder.get_targets())
+        policy = _get_dependency_policy(component_node)
+        if policy in (DependencyPolicy.BUILD_FILES, DependencyPolicy.ALL_FILES):
+            _ensure_build_file_support(deps_context.get_build_file_list,
+                                       builder_type,
+                                       component_node)
+        if policy in (DependencyPolicy.FETCHED_FILES, DependencyPolicy.ALL_FILES):
+            _ensure_fetcher_file_support_for_component(deps_context)
+
+
+def _ensure_fetcher_file_support_for_component(deps_context: DependencyContext) -> None:
+    component_node = deps_context.component_node
+    if "sources" not in component_node:
+        return
+    for source in component_node["sources"]:
+        source_type = source["type"].as_str
+        fetcher_module = deps_context.fetcher_modules[source_type]
+        fetcher = fetcher_module.get_fetcher(source, deps_context.build_dir, None)
+        _ensure_fetcher_file_support(fetcher, source_type, source)
+
+
+def _get_dependency_policy(component_node: YamlValue) -> DependencyPolicy:
+    if "dependency_policy" not in component_node:
+        return DependencyPolicy.FETCHED_FILES
+
+    policy_node = component_node["dependency_policy"]
+    try:
+        return DependencyPolicy(policy_node.as_str)
+    except ValueError:
+        raise YAMLProcessingError(
+            f"Unsupported dependency_policy '{policy_node.as_str}'. "
+            f"Expected one of: {', '.join(policy.value for policy in DependencyPolicy)}",
+            policy_node.mark) from None
 
 
 def _write_dyndep(component: str, targets: List[str], deps: List[str]) -> None:

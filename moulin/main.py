@@ -129,21 +129,28 @@ def _handle_shared_opts(description: str,
 def moulin_entry():
     """Console entry point for moulin"""
 
-    additional_opts = [
-        (["--fetcherdep"], dict(nargs=1, metavar="component", help=argparse.SUPPRESS)),
+    exclusive_opts = [
+        [
+            (["--fetcherdep"], dict(nargs=1, metavar="component", help=argparse.SUPPRESS)),
+            (["--dep"], dict(nargs=1, metavar="component", help=argparse.SUPPRESS)),
+        ],
     ]
     conf, args = _handle_shared_opts(
         f'Moulin meta-build system v{Version(importlib_metadata.version("moulin"))}',
-        additional_opts=additional_opts)
+        exclusive_opts=exclusive_opts)
 
-    if not args.fetcherdep:
+    if args.fetcherdep:
+        log.error("build.ninja was created with an older version of Moulin. "
+                  "Please re-run Moulin to update the build file.")
+        sys.exit(1)
+    elif args.dep:
+        log.info("Generating deps for component '%s'", args.dep[0])
+        build_generator.generate_component_dyndep(conf, args.dep[0])
+    else:
         # Check version and notify
         check_version_and_notify()
         log.info("Generating build.ninja")
         build_generator.generate_build(conf, args.conf)
-    else:
-        log.info("Generating deps for component '%s'", args.fetcherdep[0])
-        build_generator.generate_fetcher_dyndep(conf, args.fetcherdep[0])
 
 
 def rouge_entry():
