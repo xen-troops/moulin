@@ -199,5 +199,25 @@ components:
                 self._generate_build(doc)
 
 
+class TestGeneratedDependencyRules(unittest.TestCase):
+
+    def test_zephyr_build_rule_uses_policy_resolver(self):
+        """Verifies generated Zephyr rule runs --dep after a successful build."""
+        from moulin.builders import zephyr
+
+        with patch("moulin.ninja_syntax.Writer") as writer:
+            zephyr.gen_build_rules(writer.return_value)
+
+        rule_call = writer.return_value.rule.call_args_list[0]
+        self.assertEqual(rule_call.args[0], "zephyr_build")
+        command = rule_call.kwargs["command"]
+        self.assertIn("pushd $build_dir > /dev/null", command)
+        self.assertIn("popd > /dev/null", command)
+        self.assertIn("--dep $name", command)
+        self.assertLess(command.index("popd > /dev/null"), command.index("--dep $name"))
+        self.assertNotIn("moulin_topdir", command)
+        self.assertNotIn("--fetcherdep", command)
+
+
 if __name__ == "__main__":
     unittest.main()

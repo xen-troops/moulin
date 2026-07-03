@@ -14,11 +14,11 @@ def create_stamp_name(*args):
     return os.path.abspath(path)
 
 
-def construct_fetcher_dep_cmd() -> str:
-    "Generate command line to generate fetcher dependency file"
+def construct_dep_cmd() -> str:
+    "Generate command line to generate component dependency file"
     this_script = os.path.basename(sys.argv[0])
     args = " ".join(sys.argv[1:])
-    return f"{this_script} {args} --fetcherdep $name"
+    return f"{this_script} {args} --dep $name"
 
 
 def escape(val: str) -> str:

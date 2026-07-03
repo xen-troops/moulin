@@ -7,7 +7,7 @@ Yocto builder module
 import os.path
 import shlex
 from typing import List, Tuple, cast
-from moulin.utils import create_stamp_name, construct_fetcher_dep_cmd
+from moulin.utils import create_stamp_name, construct_dep_cmd
 from moulin import ninja_syntax
 from moulin.yaml_wrapper import YamlValue
 from moulin.yaml_helpers import YAMLProcessingError
@@ -73,11 +73,11 @@ def gen_build_rules(generator: ninja_syntax.Writer):
 
     # Invoke bitbake. This rule uses "console" pool so we can see the bitbake output.
     cmd = " && ".join([
-        # Generate fetcher dependency file
-        construct_fetcher_dep_cmd(),
-        "cd $yocto_dir",
+        "pushd $yocto_dir > /dev/null",
         "source $distro_dir/oe-init-build-env $work_dir",
         "bitbake $target",
+        "popd > /dev/null",
+        construct_dep_cmd(),
     ])
     generator.rule("yocto_build",
                    command=f'bash -c "{cmd}"',
