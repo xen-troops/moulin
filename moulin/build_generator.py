@@ -7,7 +7,9 @@ and parameters applied) and produces Ninja build file
 
 import os.path
 import sys
-from typing import Optional, List
+from dataclasses import dataclass
+from types import ModuleType
+from typing import Dict, List, Optional, Tuple
 
 from importlib import import_module
 from moulin import ninja_syntax
@@ -15,8 +17,17 @@ from moulin import make_syntax
 from moulin import rouge
 from moulin import yaml_helpers as yh
 from moulin.build_conf import MoulinConfiguration
+from moulin.yaml_wrapper import YamlValue
 
 BUILD_FILENAME = 'build.ninja'
+
+
+@dataclass
+class DependencyContext:
+    build_dir: str
+    component_node: YamlValue
+    fetcher_modules: Dict[str, ModuleType]
+    targets: List[str]
 
 
 def generate_build(conf: MoulinConfiguration,
@@ -78,25 +89,48 @@ def generate_build(conf: MoulinConfiguration,
 
 def generate_fetcher_dyndep(conf: MoulinConfiguration, component: str):
     _flatten_sources(conf)
-    generator = make_syntax.Writer(open(f".moulin_{component}.d", 'w'), width=120)
 
+    deps_context = _get_dependency_context(conf, component)
+    deps = _get_fetcher_file_list(deps_context)
+    _write_dyndep(component, deps_context.targets, deps)
+
+
+def _get_dependency_context(conf: MoulinConfiguration, component: str) -> DependencyContext:
     builder_modules, fetcher_modules = _get_modules(conf, None)
     component_node = conf.get_root()["components"][component]
     build_dir = component_node.get("build-dir", component).as_str
     builder_node = component_node["builder"]
     builder_type = builder_node["type"].as_str
     builder_module = builder_modules[builder_type]
-    builder = builder_module.get_builder(builder_node, component, build_dir, [], generator)
+    # Dependency-only mode does not generate Ninja rules. Builders that provide
+    # dependency metadata must keep that path independent from rule generation.
+    builder = builder_module.get_builder(builder_node, component, build_dir, [], None)
 
-    deps: List[str] = []
     targets = builder.get_targets()
+    return DependencyContext(build_dir=build_dir,
+                             component_node=component_node,
+                             fetcher_modules=fetcher_modules,
+                             targets=targets)
+
+
+def _get_fetcher_file_list(deps_context: DependencyContext) -> List[str]:
+    deps: List[str] = []
+    component_node = deps_context.component_node
     if "sources" in component_node:
         for source in component_node["sources"]:
             source_type = source["type"].as_str
-            fetcher_module = fetcher_modules[source_type]
-            fetcher = fetcher_module.get_fetcher(source, build_dir, generator)
+            fetcher_module = deps_context.fetcher_modules[source_type]
+            # Dependency-only mode does not generate Ninja rules. Fetchers that
+            # expose get_file_list must make that method independent from generator.
+            fetcher = fetcher_module.get_fetcher(source, deps_context.build_dir, None)
             deps.extend(fetcher.get_file_list())
-    generator.simple_dep(targets, deps)
+    return deps
+
+
+def _write_dyndep(component: str, targets: List[str], deps: List[str]) -> None:
+    with open(f".moulin_{component}.d", 'w') as stream:
+        generator = make_syntax.Writer(stream, width=120)
+        generator.simple_dep(targets, sorted(set(deps)))
 
 
 def _gen_regenerate(conf_file_name, generator: ninja_syntax.Writer):
@@ -114,7 +148,10 @@ def _flatten_sources(conf: MoulinConfiguration):
             yh.flatten_list(yh.get_mandatory_sequence_node(component, "sources"))
 
 
-def _get_modules(conf: MoulinConfiguration, generator: Optional[ninja_syntax.Writer]):
+def _get_modules(
+        conf: MoulinConfiguration,
+        generator: Optional[ninja_syntax.Writer],
+) -> Tuple[Dict[str, ModuleType], Dict[str, ModuleType]]:
     builder_modules = {}
     fetcher_modules = {}
     for _, component in conf.get_root()["components"].items():
@@ -129,14 +166,14 @@ def _get_modules(conf: MoulinConfiguration, generator: Optional[ninja_syntax.Wri
     return builder_modules, fetcher_modules
 
 
-def _prepare_builder(builder, generator):
+def _prepare_builder(builder: str, generator: Optional[ninja_syntax.Writer]) -> ModuleType:
     module = import_module(f".builders.{builder}", __package__)
     if generator:
         module.gen_build_rules(generator)
     return module
 
 
-def _prepare_fetcher(fetcher, generator):
+def _prepare_fetcher(fetcher: str, generator: Optional[ninja_syntax.Writer]) -> ModuleType:
     module = import_module(f".fetchers.{fetcher}", __package__)
     if generator:
         module.gen_build_rules(generator)
