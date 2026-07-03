@@ -8,7 +8,7 @@ import os.path
 from typing import List
 from moulin.yaml_wrapper import YamlValue
 from moulin import ninja_syntax
-from moulin.utils import construct_fetcher_dep_cmd
+from moulin.utils import construct_dep_cmd
 from moulin import utils
 from moulin.yaml_helpers import YAMLProcessingError
 
@@ -26,11 +26,11 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     Generate Zephyr build rules for ninja
     """
     cmd = " && ".join([
-        # Generate fetcher dependency file
-        construct_fetcher_dep_cmd(),
-        "cd $build_dir",
+        "pushd $build_dir > /dev/null",
         "source zephyr/zephyr-env.sh",
         "$env west build -p auto -b $board -d $work_dir $target $snippets -- $shields $vars",
+        "popd > /dev/null",
+        construct_dep_cmd(),
     ])
     generator.rule("zephyr_build",
                    command=f'bash -c "{cmd}"',
