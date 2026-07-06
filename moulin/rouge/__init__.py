@@ -4,7 +4,7 @@
 Rouge Image generator
 """
 import sys
-from typing import List, NamedTuple
+from typing import List, NamedTuple, cast
 
 from moulin import ninja_syntax
 from moulin.yaml_wrapper import YamlValue
@@ -27,7 +27,7 @@ def get_available_images(root_node: YamlValue) -> List[RougeImage]:
     ret: List[RougeImage] = []
     for name, image_node in images_node.items():
         desc = image_node.get("desc", "No description available").as_str
-        ret.append(RougeImage(name, desc, image_node))
+        ret.append(RougeImage(name, desc, cast(YamlValue, image_node)))
     return ret
 
 

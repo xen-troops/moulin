@@ -63,7 +63,7 @@ class GPT(BlockEntry):
 
         _requested_image_size_node = node.get("image_size", None)
         if _requested_image_size_node:
-            self._requested_image_size = _parse_size(_requested_image_size_node)
+            self._requested_image_size = _parse_size(cast(YamlValue, _requested_image_size_node))
 
         self._sector_size = node.get("sector_size", 512).as_int
 

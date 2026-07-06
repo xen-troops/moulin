@@ -10,7 +10,7 @@ import sys
 from time import time
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 import importlib_metadata
 import yaml
 from urllib.parse import urlparse, unquote
@@ -32,8 +32,8 @@ OptionDef = Tuple[List[str], Dict[str, Any]]
 
 
 def _prepre_shared_opts(description: str,
-                        additional_opts: List[OptionDef] = None,
-                        exclusive_opts: List[List[OptionDef]] = None):
+                        additional_opts: Optional[List[OptionDef]] = None,
+                        exclusive_opts: Optional[List[List[OptionDef]]] = None):
 
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('conf',
@@ -80,8 +80,8 @@ def _get_conf_file(conf_location: str) -> str:
 
 
 def _handle_shared_opts(description: str,
-                        additional_opts: List[OptionDef] = None,
-                        exclusive_opts: List[List[OptionDef]] = None):
+                        additional_opts: Optional[List[OptionDef]] = None,
+                        exclusive_opts: Optional[List[List[OptionDef]]] = None):
 
     parser = _prepre_shared_opts(description, additional_opts, exclusive_opts)
 
