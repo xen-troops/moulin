@@ -24,10 +24,12 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         pip3 install flake8 pytest pyaml west
+        # Needed for mypy static analysis
+        pip3 install mypy types-PyYAML
         # Needed by pygit package
-        sudo apt-get install python3-pygit2
+        sudo apt-get install -y python3-pygit2
         # Needed by moulin integration tests
-        sudo apt-get install build-essential cmake ninja-build
+        sudo apt-get install -y build-essential cmake ninja-build
         # Install other dependencies from setup.py
         pip3 install .
     - name: Lint with flake8
@@ -36,6 +38,9 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # Run all other tests
         flake8 . --count --max-complexity=12 --max-line-length=120 --statistics
+    - name: Type check with mypy
+      run: |
+        mypy moulin
     - name: Test with pytest
       run: |
         pytest
