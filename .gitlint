@@ -1,0 +1,15 @@
+[general]
+contrib = CC1,CC2
+regex-style-search = true
+ignore-fixup-commits = false
+ignore-squash-commits = false
+ignore-fixup-amend-commits = false
+
+[title-max-length]
+line-length = 72
+
+[body-max-line-length]
+line-length = 75
+
+[ignore-body-lines]
+regex = ^(Reviewed-by|Acked-by|Tested-by|Suggested-by|Reported-by|Fixes|Closes|Link|Co-developed-by|Cc): .*
