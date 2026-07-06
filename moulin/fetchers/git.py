@@ -3,7 +3,7 @@
 """Git fetcher module"""
 
 import os.path
-from typing import List
+from typing import Dict, List
 import pygit2
 from moulin.yaml_helpers import YAMLProcessingError
 from moulin.yaml_wrapper import YamlValue
@@ -52,7 +52,7 @@ def _guess_dirname(url: str):
     return url.split("/")[-1]
 
 
-_SEEN_REPOS_REV = {}
+_SEEN_REPOS_REV: Dict[str, str] = {}
 
 
 class GitFetcher:
