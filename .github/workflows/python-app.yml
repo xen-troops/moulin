@@ -20,10 +20,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
         pip3 install flake8 pytest pyaml west
+        # Needed for commit message linting
+        pip3 install gitlint
         # Needed for mypy static analysis
         pip3 install mypy types-PyYAML
         # Needed by pygit package
@@ -38,6 +42,29 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # Run all other tests
         flake8 . --count --max-complexity=12 --max-line-length=120 --statistics
+    - name: Check commit messages
+      run: |
+        zero_sha=0000000000000000000000000000000000000000
+        base_sha="${{ github.event.pull_request.base.sha }}"
+        head_sha="${{ github.event.pull_request.head.sha }}"
+        before_sha="${{ github.event.before }}"
+        current_sha="${{ github.sha }}"
+        # Pull requests must validate every commit in the PR, not only HEAD.
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "$base_sha" ] && [ -n "$head_sha" ]; then
+          gitlint --commits "$base_sha..$head_sha"
+        # Push events validate only the newly pushed commit range.
+        elif [ -n "$before_sha" ] && [ "$before_sha" != "$zero_sha" ]; then
+          gitlint --commits "$before_sha..$current_sha"
+        # act does not always populate GitHub event SHAs, so use the local
+        # main branch range when it is available.
+        elif git rev-parse --verify upstream/main >/dev/null 2>&1; then
+          gitlint --commits upstream/main..HEAD
+        elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+          gitlint --commits origin/main..HEAD
+        else
+          # Last-resort fallback for local runs without remotes.
+          gitlint --commits HEAD
+        fi
     - name: Type check with mypy
       run: |
         mypy moulin
