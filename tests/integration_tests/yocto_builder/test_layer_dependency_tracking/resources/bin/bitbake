@@ -1,0 +1,4 @@
+#!/bin/sh
+echo "$@" >> bitbake.log
+mkdir -p deploy
+printf 'fake image for %s\n' "$*" > deploy/image.txt

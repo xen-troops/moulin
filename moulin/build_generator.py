@@ -24,6 +24,7 @@ from moulin.yaml_wrapper import YamlValue
 
 BUILD_FILENAME = 'build.ninja'
 BuildFileListGetter = Callable[[], List[str]]
+ExtraDepFileListGetter = Callable[[], List[str]]
 
 
 class DependencyPolicy(Enum):
@@ -39,6 +40,7 @@ class DependencyContext:
     builder_type: str
     fetcher_modules: Dict[str, ModuleType]
     get_build_file_list: Optional[BuildFileListGetter]
+    get_extra_dep_file_list: Optional[ExtraDepFileListGetter]
     targets: List[str]
     generator: ninja_syntax.Writer
 
@@ -121,6 +123,7 @@ def generate_component_dyndep(conf: MoulinConfiguration, component: str) -> None
         deps.extend(_get_fetcher_file_list(deps_context))
     if policy in (DependencyPolicy.BUILD_FILES, DependencyPolicy.ALL_FILES):
         deps.extend(_get_builder_file_list(deps_context))
+    deps.extend(_get_extra_dep_file_list(deps_context))
     _write_dyndep(component, deps_context.targets, deps)
 
 
@@ -140,6 +143,7 @@ def _get_dependency_context(conf: MoulinConfiguration, component: str) -> Depend
                              builder_type=builder_type,
                              fetcher_modules=fetcher_modules,
                              get_build_file_list=_get_build_file_list_getter(builder),
+                             get_extra_dep_file_list=_get_extra_dep_file_list_getter(builder),
                              targets=targets,
                              generator=generator)
 
@@ -172,6 +176,19 @@ def _get_build_file_list_getter(builder: object) -> Optional[BuildFileListGetter
     get_build_file_list = getattr(builder, "get_build_file_list", None)
     if callable(get_build_file_list):
         return cast(BuildFileListGetter, get_build_file_list)
+    return None
+
+
+def _get_extra_dep_file_list(deps_context: DependencyContext) -> List[str]:
+    if deps_context.get_extra_dep_file_list:
+        return deps_context.get_extra_dep_file_list()
+    return []
+
+
+def _get_extra_dep_file_list_getter(builder: object) -> Optional[ExtraDepFileListGetter]:
+    get_extra_dep_file_list = getattr(builder, "get_extra_dep_file_list", None)
+    if callable(get_extra_dep_file_list):
+        return cast(ExtraDepFileListGetter, get_extra_dep_file_list)
     return None
 
 
@@ -218,6 +235,7 @@ def _validate_dependency_configuration(conf: MoulinConfiguration,
                                          builder_type=builder_type,
                                          fetcher_modules=fetcher_modules,
                                          get_build_file_list=_get_build_file_list_getter(builder),
+                                         get_extra_dep_file_list=_get_extra_dep_file_list_getter(builder),
                                          targets=builder.get_targets(),
                                          generator=generator)
         policy = _get_dependency_policy(component_node)

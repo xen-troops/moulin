@@ -97,6 +97,39 @@ components:
         self.assertIn("test/fetched/source-file", depfile)
         self.assertNotIn("build-input", depfile)
 
+    def test_yocto_layer_files_are_always_added_to_depfile(self):
+        """Verifies Yocto layer files are tracked without extra YAML options."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../meta-product"
+        """
+
+        def setup():
+            os.makedirs("test/meta-product/conf")
+            os.makedirs("test/meta-product/recipes-core/images")
+            with open("test/meta-product/conf/layer.conf", "w", encoding="utf-8") as stream:
+                stream.write("# layer configuration\n")
+            with open("test/meta-product/recipes-core/images/image.bb", "w",
+                      encoding="utf-8") as stream:
+                stream.write("DESCRIPTION = \"test image\"\n")
+
+        depfile = self._generate_depfile(doc, setup=setup)
+
+        self.assertIn("test/build/target-image:", depfile)
+        self.assertIn("test/meta-product/conf/layer.conf", depfile)
+        self.assertIn("test/meta-product/recipes-core/images/image.bb", depfile)
+
     def test_build_files_dependency_policy_rejects_unsupported_builder(self):
         """Verifies direct --dep rejects unsupported 'build_files' deps policy."""
         doc = """

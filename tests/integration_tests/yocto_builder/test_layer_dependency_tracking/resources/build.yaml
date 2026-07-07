@@ -1,0 +1,14 @@
+desc: "Integration test Yocto layer dependency tracking"
+components:
+  test:
+    build-dir: "workspace"
+    default: true
+    builder:
+      type: yocto
+      work_dir: "."
+      build_target: core-image-minimal
+      conf:
+      target_images:
+        - "deploy/image.txt"
+      layers:
+        - "meta-product"

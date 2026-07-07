@@ -1,0 +1,5 @@
+work_dir="$1"
+mkdir -p "$work_dir/conf"
+[ -e "$work_dir/conf/local.conf" ] || : > "$work_dir/conf/local.conf"
+[ -e "$work_dir/conf/bblayers.conf" ] || : > "$work_dir/conf/bblayers.conf"
+cd "$work_dir"
