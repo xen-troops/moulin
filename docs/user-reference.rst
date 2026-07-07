@@ -542,7 +542,9 @@ needed if you are building multiple VMs with cross-dependencies.
   with this list: it adds missing layers, removes layers that were
   previously managed by Moulin but are no longer listed, and reorders
   managed layers when needed. Layers not managed by Moulin are left
-  untouched.
+  untouched. Files under listed layer directories are also added to the
+  generated Ninja depfile for the component, so changes in Moulin-managed
+  layers trigger a rebuild of the Yocto target images.
 
 * :code:`work_dir` - `bitbake`'s work directory. The default value is
   "build". This is where files like "conf/local.conf" are stored. You
