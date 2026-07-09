@@ -349,10 +349,14 @@ class Ext4(FileSystem):
                     # create destination subfolder
                     os.makedirs(os.path.join(tempd, remote_path_and_name[0]), exist_ok=True)
 
-                if os.path.isfile(local):
-                    shutil.copyfile(local, os.path.join(tempd, remote))
+                destination = os.path.join(tempd, remote)
+                if os.path.islink(local):
+                    os.symlink(os.readlink(local), destination)
+                    shutil.copystat(local, destination, follow_symlinks=False)
+                elif os.path.isfile(local):
+                    shutil.copy2(local, destination)
                 if os.path.isdir(local):
-                    shutil.copytree(local, os.path.join(tempd, remote), symlinks=True, dirs_exist_ok=True)
+                    shutil.copytree(local, destination, symlinks=True, dirs_exist_ok=True)
             tempf.truncate(self._size)
             ext_utils.mkext4fs(tempf, tempd)
             ext_utils.dd(tempf, fp, offset, sparse=self._sparse)
