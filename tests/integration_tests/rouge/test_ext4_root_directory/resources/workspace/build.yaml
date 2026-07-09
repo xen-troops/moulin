@@ -1,0 +1,27 @@
+desc: "Rouge WIC-like RW var partition test"
+images:
+  rw_var_from_root_directory:
+    desc: "RW /var partition from a prepared RO rootfs folder"
+    type: ext4
+    size: 16 MiB
+    root_owner: "123:456"
+    root_directory: "ro-rootfs/var"
+  rw_var_from_items:
+    desc: "RW /var partition from items"
+    type: ext4
+    size: 16 MiB
+    root_owner: "123:456"
+    items:
+      "/": "ro-rootfs/var/"
+  invalid_ext4_mix:
+    desc: "root_directory cannot be mixed with items"
+    type: ext4
+    size: 16 MiB
+    root_directory: "ro-rootfs/var"
+    items:
+      "/": "ro-rootfs/var/"
+  invalid_vfat_root_directory:
+    desc: "root_directory is ext4-only"
+    type: vfat
+    size: 16 MiB
+    root_directory: "ro-rootfs/var"

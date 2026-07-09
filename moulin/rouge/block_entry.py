@@ -336,7 +336,17 @@ class Ext4(FileSystem):
     "Represents ext4 fs with list of files"
     def __init__(self, node: YamlValue, **kwargs):
         super().__init__(node, **kwargs)
+        self._root_directory: Optional[str] = None
         self._root_owner: Optional[str] = None
+
+        root_directory_node = self._node.get("root_directory", None)
+        if root_directory_node:
+            root_directory_node = cast(YamlValue, root_directory_node)
+            if self._items:
+                raise YAMLProcessingError(
+                    "'root_directory' cannot be used with 'items' or 'files'",
+                    root_directory_node.mark)
+            self._root_directory = root_directory_node.as_str
 
         root_owner_node = self._node.get("root_owner", None)
         if root_owner_node:
@@ -347,32 +357,69 @@ class Ext4(FileSystem):
                 raise YAMLProcessingError("'root_owner' must use numeric 'uid:gid' format",
                                           root_owner_node.mark)
 
+    def _complete_init(self):
+        if self._root_directory:
+            if not os.path.isdir(self._root_directory):
+                raise YAMLProcessingError(f"Can't find directory '{self._root_directory}'",
+                                          self._node["root_directory"].mark)
+
+            files_size = os.path.getsize(self._root_directory)
+            for (dirpath, dirnames, filenames) in os.walk(self._root_directory, topdown=True):
+                for filename in filenames:
+                    files_size += os.lstat(os.path.join(dirpath, filename)).st_size
+                for dirname in dirnames:
+                    files_size += os.path.getsize(os.path.join(dirpath, dirname))
+            files_size += 8 * 1024 * 1024
+
+            size_node = self._node.get("size", None)
+            if size_node:
+                self._size = _parse_size(size_node)
+                if files_size > self._size:
+                    raise YAMLProcessingError(
+                        f"Computed size is {files_size}, "
+                        f"it is bigger than partition size {self._size}",
+                        size_node.mark)
+            else:
+                self._size = files_size
+            return
+
+        super()._complete_init()
+
     def write(self, fp, offset):
         if not self._size:
             self._complete_init()
         with NamedTemporaryFile() as tempf, TemporaryDirectory() as tempd:
-            for remote, local, _ in self._items:
-                # user can specify destination folder from root
-                # and we need to remove very first '/' for correct
-                # work of os.path.join
-                remote = remote.lstrip('/')
-                # create destination subfolders
-                remote_path_and_name = os.path.split(remote)
-                if remote_path_and_name[0]:
-                    # create destination subfolder
-                    os.makedirs(os.path.join(tempd, remote_path_and_name[0]), exist_ok=True)
+            contents_dir = self._root_directory
+            if not contents_dir:
+                contents_dir = tempd
+                for remote, local, _ in self._items:
+                    # user can specify destination folder from root
+                    # and we need to remove very first '/' for correct
+                    # work of os.path.join
+                    remote = remote.lstrip('/')
+                    # create destination subfolders
+                    remote_path_and_name = os.path.split(remote)
+                    if remote_path_and_name[0]:
+                        # create destination subfolder
+                        os.makedirs(os.path.join(tempd, remote_path_and_name[0]), exist_ok=True)
 
-                destination = os.path.join(tempd, remote)
-                if os.path.islink(local):
-                    os.symlink(os.readlink(local), destination)
-                    shutil.copystat(local, destination, follow_symlinks=False)
-                elif os.path.isfile(local):
-                    shutil.copy2(local, destination)
-                if os.path.isdir(local):
-                    shutil.copytree(local, destination, symlinks=True, dirs_exist_ok=True)
+                    destination = os.path.join(tempd, remote)
+                    if os.path.islink(local):
+                        os.symlink(os.readlink(local), destination)
+                        shutil.copystat(local, destination, follow_symlinks=False)
+                    elif os.path.isfile(local):
+                        shutil.copy2(local, destination)
+                    if os.path.isdir(local):
+                        shutil.copytree(local, destination, symlinks=True, dirs_exist_ok=True)
             tempf.truncate(self._size)
-            ext_utils.mkext4fs(tempf, tempd, self._root_owner)
+            ext_utils.mkext4fs(tempf, contents_dir, self._root_owner)
             ext_utils.dd(tempf, fp, offset, sparse=self._sparse)
+
+    def get_deps(self) -> List[str]:
+        "Return list of dependencies needed to build this block"
+        if self._root_directory:
+            return [self._root_directory]
+        return super().get_deps()
 
 
 class Vfat(FileSystem):
@@ -381,11 +428,12 @@ class Vfat(FileSystem):
     def __init__(self, node: YamlValue, **kwargs):
         super(Vfat, self).__init__(node, **kwargs)
         self._sector_size = kwargs.get('sector_size')
-        root_owner_node = self._node.get("root_owner", None)
-        if root_owner_node:
-            root_owner_node = cast(YamlValue, root_owner_node)
-            raise YAMLProcessingError("'root_owner' is supported only by ext4",
-                                      root_owner_node.mark)
+        for option in ["root_directory", "root_owner"]:
+            option_node = self._node.get(option, None)
+            if option_node:
+                option_node = cast(YamlValue, option_node)
+                raise YAMLProcessingError(f"'{option}' is supported only by ext4",
+                                          option_node.mark)
 
     def unwrap_dirs(self):
         "Return list of files with flatten content of the directories"
