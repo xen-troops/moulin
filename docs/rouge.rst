@@ -344,6 +344,20 @@ size on disk and processing time. Use this option only when absolutely
 necessary, i.e, when some piece of software (like a bootloader) depends
 on values in unallocated sectors.
 
+:code:`root_owner:` for :code:`ext4` filesystems can be used to set the
+owner of the filesystem root directory:
+
+.. code-block:: yaml
+
+   type: ext4
+   size: 128 MiB
+   root_owner: "0:0"
+
+This option must use numeric :code:`uid:gid` format. It is passed to
+:code:`mkfs.ext4 -E root_owner=uid:gid`. It affects only the root
+directory of the created filesystem, not every file recursively. If it
+is omitted, :code:`mkfs.ext4` default behavior is used.
+
 GUID Partition Table (GPT) block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

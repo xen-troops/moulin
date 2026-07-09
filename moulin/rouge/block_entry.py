@@ -334,6 +334,19 @@ class FileSystem(BlockEntry):
 
 class Ext4(FileSystem):
     "Represents ext4 fs with list of files"
+    def __init__(self, node: YamlValue, **kwargs):
+        super().__init__(node, **kwargs)
+        self._root_owner: Optional[str] = None
+
+        root_owner_node = self._node.get("root_owner", None)
+        if root_owner_node:
+            root_owner_node = cast(YamlValue, root_owner_node)
+            self._root_owner = root_owner_node.as_str
+            owner_parts = self._root_owner.split(":")
+            if len(owner_parts) != 2 or not all(part.isdigit() for part in owner_parts):
+                raise YAMLProcessingError("'root_owner' must use numeric 'uid:gid' format",
+                                          root_owner_node.mark)
+
     def write(self, fp, offset):
         if not self._size:
             self._complete_init()
@@ -358,7 +371,7 @@ class Ext4(FileSystem):
                 if os.path.isdir(local):
                     shutil.copytree(local, destination, symlinks=True, dirs_exist_ok=True)
             tempf.truncate(self._size)
-            ext_utils.mkext4fs(tempf, tempd)
+            ext_utils.mkext4fs(tempf, tempd, self._root_owner)
             ext_utils.dd(tempf, fp, offset, sparse=self._sparse)
 
 
@@ -368,6 +381,11 @@ class Vfat(FileSystem):
     def __init__(self, node: YamlValue, **kwargs):
         super(Vfat, self).__init__(node, **kwargs)
         self._sector_size = kwargs.get('sector_size')
+        root_owner_node = self._node.get("root_owner", None)
+        if root_owner_node:
+            root_owner_node = cast(YamlValue, root_owner_node)
+            raise YAMLProcessingError("'root_owner' is supported only by ext4",
+                                      root_owner_node.mark)
 
     def unwrap_dirs(self):
         "Return list of files with flatten content of the directories"
