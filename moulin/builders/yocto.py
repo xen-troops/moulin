@@ -340,12 +340,20 @@ def _env_prefix(yocto_dir: str, work_dir: str) -> str:
 
 def _run_bash(cmd: str, *, capture=False) -> subprocess.CompletedProcess:
     """Run a bash -lc command."""
-    return subprocess.run(
-        ["bash", "-lc", cmd],
-        check=True,
-        capture_output=capture,
-        text=capture,
-    )
+    try:
+        return subprocess.run(
+            ["bash", "-lc", cmd],
+            check=True,
+            capture_output=capture,
+            text=capture,
+        )
+    except subprocess.CalledProcessError as exc:
+        if capture:
+            if exc.stdout:
+                print(exc.stdout, end="", file=sys.stdout)
+            if exc.stderr:
+                print(exc.stderr, end="", file=sys.stderr)
+        raise
 
 
 def relative_paths_to_absolute(base: Path, rels: List[str]) -> List[str]:

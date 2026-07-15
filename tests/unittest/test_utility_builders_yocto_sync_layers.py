@@ -1,8 +1,10 @@
 import unittest
 import shlex
+import subprocess
 from unittest.mock import patch, Mock
 import moulin.builders.yocto as yocto_mod
 from pathlib import Path
+from io import StringIO
 
 
 class TestYoctoUtilitySyncLayers(unittest.TestCase):
@@ -201,6 +203,23 @@ class TestYoctoUtilitySyncLayers(unittest.TestCase):
 
         # managed layer state was updated
         mock_write.assert_called_once_with(stamp_path, layers_abs)
+
+    def test_run_bash_prints_captured_output_on_failure(self):
+        failure = subprocess.CalledProcessError(
+            1,
+            ["bash", "-lc", "bitbake-layers show-layers"],
+            output="captured stdout\n",
+            stderr="captured stderr\n",
+        )
+
+        with patch("moulin.builders.yocto.subprocess.run", side_effect=failure), \
+             patch("sys.stdout", new_callable=StringIO) as stdout, \
+             patch("sys.stderr", new_callable=StringIO) as stderr:
+            with self.assertRaises(subprocess.CalledProcessError):
+                yocto_mod._run_bash("bitbake-layers show-layers", capture=True)
+
+        self.assertEqual(stdout.getvalue(), "captured stdout\n")
+        self.assertEqual(stderr.getvalue(), "captured stderr\n")
 
     def test_stamp_exists_identical_layers_no_add_or_remove(self):
         """
