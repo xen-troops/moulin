@@ -221,6 +221,33 @@ class TestYoctoUtilitySyncLayers(unittest.TestCase):
         self.assertEqual(stdout.getvalue(), "captured stdout\n")
         self.assertEqual(stderr.getvalue(), "captured stderr\n")
 
+    def test_utility_uses_configured_distro_dir(self):
+        yocto_dir = "/abs/path/to/yocto"
+        work_dir = "build-dom0"
+        distro_dir = "openembedded-core"
+        layers = ["../fake-layer1"]
+        stamp_path = "/tmp/layers.stamp"
+
+        with patch("moulin.builders.yocto.Path.exists", return_value=False), \
+             patch("moulin.builders.yocto._run_bash") as mock_run, \
+             patch("moulin.builders.yocto._write_managed_layers"):
+
+            mock_run.return_value = Mock(returncode=0, stdout="", stderr="")
+
+            yocto_mod.handle_utility_call(
+                argv=[
+                    "--yocto-dir", yocto_dir,
+                    "--distro-dir", distro_dir,
+                    "--work-dir", work_dir,
+                    "--layers", *layers,
+                    "--stamp", stamp_path,
+                ],
+            )
+
+        cmd = mock_run.call_args_list[-1][0][0]
+        self.assertIn(". openembedded-core/oe-init-build-env build-dom0", cmd)
+        self.assertNotIn(". poky/oe-init-build-env build-dom0", cmd)
+
     def test_stamp_exists_identical_layers_no_add_or_remove(self):
         """
         Stamp exists and layers already match YAML:

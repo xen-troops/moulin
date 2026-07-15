@@ -54,6 +54,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
         f"{prog} "
         "--utility-builders-yocto "
         "--yocto-dir $yocto_dir "
+        "--distro-dir $distro_dir "
         "--work-dir $work_dir "
         "--layers $layers "
         "--stamp $out"
@@ -327,14 +328,14 @@ class YoctoBuilder:
         """
 
 
-def _env_prefix(yocto_dir: str, work_dir: str) -> str:
+def _env_prefix(yocto_dir: str, distro_dir: str, work_dir: str) -> str:
     """
     Return a shell snippet that cd's into yocto_dir and sources
     oe-init-build-env for work_dir.
     """
     return " && ".join([
         f"cd {shlex.quote(yocto_dir)}",
-        f". poky/oe-init-build-env {shlex.quote(work_dir)}",
+        f". {shlex.quote(distro_dir)}/oe-init-build-env {shlex.quote(work_dir)}",
     ])
 
 
@@ -480,6 +481,7 @@ def handle_utility_call(argv: List[str]) -> int:
     # Parse args
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--yocto-dir", required=True)  # path to Yocto root
+    parser.add_argument("--distro-dir", default="poky")  # path to distro inside Yocto root
     parser.add_argument("--work-dir", required=True)  # path to build dir
     parser.add_argument("--layers", nargs="+", required=True)  # YAML layers (relative to yocto root)
     parser.add_argument("--stamp", required=True)  # stamp file path
@@ -491,10 +493,11 @@ def handle_utility_call(argv: List[str]) -> int:
         for layer in args.layers
     )
     yocto_root = args.yocto_dir
+    distro_dir = args.distro_dir
     build_dir = args.work_dir
     stamp_out = args.stamp
     stamp_exists = Path(stamp_out).exists()
-    env_prefix = _env_prefix(yocto_root, build_dir)
+    env_prefix = _env_prefix(yocto_root, distro_dir, build_dir)
 
     # Compute absolute build path
     build_dir_path = Path(build_dir)
