@@ -99,6 +99,42 @@ components:
         else:
             self.fail("Could not find yocto_build target")
 
+    def test_layer_sync_passes_distro_dir(self):
+        doc = """
+desc: "Test build"
+components:
+  test:
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      base_distro: openembedded-core
+      conf:
+      layers:
+        - "../meta-layer"
+      target_images:
+        - "target-image"
+    sources:
+      - type: "null"
+        """
+        node = yaml.compose(doc)
+        conf = MoulinConfiguration(node)
+        generate_build(conf, "test.yaml")
+
+        self.Writer.return_value.rule.assert_any_call(
+            "yocto_update_layers",
+            command=ANY,
+            description="Synchronize Yocto layers with a moulin configuration file",
+            pool="console",
+            restat=True,
+        )
+        for call in self.Writer.return_value.rule.call_args_list:
+            if call.args[0] == "yocto_update_layers":
+                command = call.kwargs["command"]
+                self.assertIn("--distro-dir $distro_dir", command)
+                break
+        else:
+            self.fail("Could not find yocto_update_layers rule")
+
     def test_target_images_expansion(self):
         doc = """
 desc: "Test build"
