@@ -186,6 +186,12 @@ your YAML Moulin configuration files.
     return result
 
 
+def _is_same_or_child_path(child_candidate: str, parent_candidate: str) -> bool:
+    child_candidate = os.path.abspath(os.path.normpath(child_candidate))
+    parent_candidate = os.path.abspath(os.path.normpath(parent_candidate))
+    return os.path.commonpath([child_candidate, parent_candidate]) == parent_candidate
+
+
 class YoctoBuilder:
     """
     YoctoBuilder class generates Ninja rules for given build configuration
@@ -303,13 +309,37 @@ class YoctoBuilder:
 
         deps: List[str] = []
         layers_base = os.path.join(self.yocto_dir, self.work_dir)
+        yocto_dir = os.path.abspath(os.path.normpath(self.yocto_dir))
+        work_dir = os.path.abspath(os.path.normpath(os.path.join(self.yocto_dir, self.work_dir)))
+
+        # work_dir='.' leaves no separate generated build dir to prune.
+        work_dir_can_be_pruned = work_dir != yocto_dir
         layers = _filter_yocto_core_layers(_flatten_layers(layers_node))
         for layer in layers:
             layer_path = os.path.normpath(os.path.join(layers_base, layer))
             if not os.path.isdir(layer_path):
                 raise YAMLProcessingError(f"Can't find Yocto layer directory '{layer_path}'",
                                           layers_node.mark)
-            for dirpath, _, filenames in os.walk(layer_path):
+
+            # A broad layer path can contain the Yocto build dir, for example
+            # layer_path=yocto with work_dir=yocto/build/secure-image.
+            work_dir_is_inside_layer = (work_dir_can_be_pruned
+                                        and _is_same_or_child_path(work_dir, layer_path))
+            if work_dir_is_inside_layer:
+                work_dir_parent = os.path.dirname(work_dir)
+                work_dir_basename = os.path.basename(work_dir)
+            else:
+                work_dir_parent = None
+                work_dir_basename = None
+
+            for dirpath, dirnames, filenames in os.walk(layer_path):
+                abs_dirpath = os.path.abspath(os.path.normpath(dirpath))
+                if (abs_dirpath == work_dir_parent
+                        and work_dir_basename in dirnames):
+                    # os.walk() is top-down, so removing the build dir name here
+                    # prevents traversal of generated trees such as buildhistory.
+                    dirnames.remove(work_dir_basename)
+
                 deps.extend(os.path.join(dirpath, filename) for filename in filenames)
         return deps
 
