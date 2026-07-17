@@ -36,8 +36,10 @@ def commit_file(repo_path, filename, content, message):
     run_cmd(["git", "commit", "-m", message], repo_path)
 
 
-GROUP_FILTER = "+kept,-dropped"
-GROUP_FILTER_STRING = f'        group_filter: "{GROUP_FILTER}"'
+GROUP_FILTER_WITH_LEADING_PLUS = "+kept,-dropped"
+GROUP_FILTER_WITH_LEADING_MINUS = "-dropped,+kept"
+GROUP_FILTER_STRING = f'        group_filter: "{GROUP_FILTER_WITH_LEADING_PLUS}"'
+GROUP_FILTER_LEADING_MINUS_STRING = f'        group_filter: "{GROUP_FILTER_WITH_LEADING_MINUS}"'
 GROUP_FILTER_LIST = "\n".join([
     "        group_filter:",
     "          - \"+kept\"",
@@ -50,15 +52,16 @@ def create_bare_remote(source_path, target_path, cwd):
 
 
 @pytest.mark.parametrize(
-    "group_filter_yaml",
+    ("group_filter_yaml", "expected_group_filter"),
     [
-        GROUP_FILTER_STRING,
-        GROUP_FILTER_LIST,
+        (GROUP_FILTER_STRING, GROUP_FILTER_WITH_LEADING_PLUS),
+        (GROUP_FILTER_LIST, GROUP_FILTER_WITH_LEADING_PLUS),
+        (GROUP_FILTER_LEADING_MINUS_STRING, GROUP_FILTER_WITH_LEADING_MINUS),
     ],
-    ids=["string", "list"],
+    ids=["string", "list", "leading-minus-string"],
 )
 @pytest.mark.integration
-def test_west_fetcher_group_filter(group_filter_yaml):
+def test_west_fetcher_group_filter(group_filter_yaml, expected_group_filter):
     script_path = os.path.abspath(__file__)
     script_dir_path = os.path.dirname(script_path)
     moulin_path = os.path.abspath(os.path.join(script_dir_path,
@@ -126,7 +129,8 @@ def test_west_fetcher_group_filter(group_filter_yaml):
         with open(os.path.join(build_dir, "build.ninja"),
                   encoding="utf-8") as stream:
             build_ninja = stream.read()
-        assert f"group_filter = {GROUP_FILTER}" in build_ninja
+        assert "west config manifest.group-filter -- \"$group_filter\"" in build_ninja
+        assert f"group_filter = {expected_group_filter}" in build_ninja
 
         result = subprocess.run(["ninja", "fetch-test"],
                                 cwd=build_dir,
@@ -139,7 +143,7 @@ def test_west_fetcher_group_filter(group_filter_yaml):
 
         result = run_cmd(["west", "config", "manifest.group-filter"],
                          os.path.join(build_dir, "workspace"))
-        assert result.stdout.strip() == GROUP_FILTER
+        assert result.stdout.strip() == expected_group_filter
 
         result = run_cmd(["west", "list", "--format={name}"],
                          os.path.join(build_dir, "workspace"))

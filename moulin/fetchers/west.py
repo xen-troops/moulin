@@ -36,7 +36,7 @@ def gen_build_rules(generator: ninja_syntax.Writer):
     cmd = " && ".join([
         "cd $build_dir",
         "if [ -n \"$group_filter\" ]; then "
-        "west config manifest.group-filter \"$group_filter\"; "
+        "west config manifest.group-filter -- \"$group_filter\"; "
         "else west config -d --local manifest.group-filter || true; fi",
         "west update -n",
         "touch $out",
