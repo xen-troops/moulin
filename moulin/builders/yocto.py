@@ -20,6 +20,22 @@ from pathlib import Path
 
 
 YOCTO_CORE_LAYERS = ["../poky/meta", "../poky/meta-poky", "../poky/meta-yocto-bsp", "../openembedded-core/meta"]
+# Moulin keeps the variable list, but BitBake provides the actual paths. TOPDIR
+# is set by BitBake; the other variables are OE-Core/Poky build directories
+# normally defined from TOPDIR/TMPDIR in meta/conf/bitbake.conf. BUILDHISTORY_DIR
+# is optional and exists only when buildhistory metadata is enabled.
+YOCTO_GENERATED_DIR_VARIABLES = [
+    "TOPDIR",
+    "TMPDIR",
+    "DL_DIR",
+    "SSTATE_DIR",
+    "PERSISTENT_DIR",
+    "CACHE",
+    "BUILDHISTORY_DIR",
+    "DEPLOY_DIR",
+    "PKGDATA_DIR",
+    "STAMPS_DIR",
+]
 log = logging.getLogger(__name__)
 
 
@@ -188,9 +204,75 @@ your YAML Moulin configuration files.
 
 
 def _is_same_or_child_path(child_candidate: str, parent_candidate: str) -> bool:
-    child_candidate = os.path.abspath(os.path.normpath(child_candidate))
-    parent_candidate = os.path.abspath(os.path.normpath(parent_candidate))
+    # realpath is required for product layers reached through symlinks, e.g.
+    # yocto/meta-product -> ../../meta-product, so generated build dirs are
+    # matched against their physical BitBake paths.
+    child_candidate = os.path.realpath(os.path.abspath(os.path.normpath(child_candidate)))
+    parent_candidate = os.path.realpath(os.path.abspath(os.path.normpath(parent_candidate)))
     return os.path.commonpath([child_candidate, parent_candidate]) == parent_candidate
+
+
+def _get_yocto_generated_dirs(yocto_dir: str, distro_dir: str, work_dir: str) -> List[str]:
+    env_prefix = _env_prefix(yocto_dir, distro_dir, work_dir, quiet=True)
+    paths: List[str] = []
+    for variable in YOCTO_GENERATED_DIR_VARIABLES:
+        cmd = " && ".join([
+            env_prefix,
+            f"bitbake-getvar --ignore-undefined --value {shlex.quote(variable)}",
+        ])
+        try:
+            value = _run_bash(cmd, capture=True).stdout.strip()
+        except (OSError, subprocess.CalledProcessError) as exc:
+            # Keep compatibility with BitBake versions that may miss a variable,
+            # but warn because an incomplete list can leave generated files in deps.
+            log.warning("Can't query BitBake generated directory variable %s: %s",
+                        variable, exc)
+            continue
+        if os.path.isabs(value):
+            # Only absolute paths can be safely compared with os.walk() results.
+            paths.append(os.path.realpath(os.path.abspath(os.path.normpath(value))))
+    return sorted(set(paths))
+
+
+def _get_layer_file_list(layer_path: str, generated_dirs: List[str]) -> List[str]:
+    """
+    Return layer files, excluding BitBake generated directories.
+
+    Args:
+        layer_path: Directory to scan for layer dependency files.
+        generated_dirs: Absolute generated directory paths reported by BitBake.
+            Matching child directories are removed from os.walk() in-place to
+            prevent descent into generated trees. The function prunes before
+            traversal, so generated trees are not enumerated file by file.
+
+    Returns:
+        Files below layer_path, except files located inside generated_dirs.
+    """
+    deps: List[str] = []
+    for dirpath, dirnames, filenames in os.walk(layer_path):
+        if ".git" in dirnames:
+            dirnames.remove(".git")
+
+        abs_dirpath = os.path.realpath(os.path.abspath(os.path.normpath(dirpath)))
+        if any(_is_same_or_child_path(abs_dirpath, generated_dir)
+               for generated_dir in generated_dirs):
+            # Stop descent if the walk already entered a generated tree.
+            dirnames.clear()
+            continue
+
+        for generated_dir in generated_dirs:
+            if not _is_same_or_child_path(generated_dir, abs_dirpath):
+                continue
+            # Generated directory is inside the layer directory. Remove its
+            # next path segment from dirnames, because top-down os.walk() uses
+            # dirnames as the list of child directories it will visit next.
+            relative_path = os.path.relpath(generated_dir, abs_dirpath)
+            dirname = relative_path.split(os.sep, 1)[0]
+            if dirname in dirnames:
+                dirnames.remove(dirname)
+
+        deps.extend(os.path.join(dirpath, filename) for filename in filenames)
+    return deps
 
 
 class YoctoBuilder:
@@ -310,38 +392,23 @@ class YoctoBuilder:
 
         deps: List[str] = []
         layers_base = os.path.join(self.yocto_dir, self.work_dir)
-        yocto_dir = os.path.abspath(os.path.normpath(self.yocto_dir))
-        work_dir = os.path.abspath(os.path.normpath(os.path.join(self.yocto_dir, self.work_dir)))
-
-        # work_dir='.' leaves no separate generated build dir to prune.
-        work_dir_can_be_pruned = work_dir != yocto_dir
+        generated_dirs = _get_yocto_generated_dirs(self.yocto_dir, self.base_distro,
+                                                   self.work_dir)
         layers = _filter_yocto_core_layers(_flatten_layers(layers_node))
         for layer in layers:
             layer_path = os.path.normpath(os.path.join(layers_base, layer))
             if not os.path.isdir(layer_path):
                 raise YAMLProcessingError(f"Can't find Yocto layer directory '{layer_path}'",
                                           layers_node.mark)
+            generated_dirs_inside_layer_dir = [
+                generated_dir
+                for generated_dir in generated_dirs
+                if _is_same_or_child_path(generated_dir, layer_path)
+            ]
 
-            # A broad layer path can contain the Yocto build dir, for example
-            # layer_path=yocto with work_dir=yocto/build/secure-image.
-            work_dir_is_inside_layer = (work_dir_can_be_pruned
-                                        and _is_same_or_child_path(work_dir, layer_path))
-            if work_dir_is_inside_layer:
-                work_dir_parent = os.path.dirname(work_dir)
-                work_dir_basename = os.path.basename(work_dir)
-            else:
-                work_dir_parent = None
-                work_dir_basename = None
-
-            for dirpath, dirnames, filenames in os.walk(layer_path):
-                abs_dirpath = os.path.abspath(os.path.normpath(dirpath))
-                if (abs_dirpath == work_dir_parent
-                        and work_dir_basename in dirnames):
-                    # os.walk() is top-down, so removing the build dir name here
-                    # prevents traversal of generated trees such as buildhistory.
-                    dirnames.remove(work_dir_basename)
-
-                deps.extend(os.path.join(dirpath, filename) for filename in filenames)
+            # Prune generated dirs per containing layer, so explicit layers under
+            # work_dir remain trackable.
+            deps.extend(_get_layer_file_list(layer_path, generated_dirs_inside_layer_dir))
         return deps
 
     def get_targets(self):
@@ -358,14 +425,16 @@ class YoctoBuilder:
         """
 
 
-def _env_prefix(yocto_dir: str, distro_dir: str, work_dir: str) -> str:
+def _env_prefix(yocto_dir: str, distro_dir: str, work_dir: str, quiet: bool = False) -> str:
     """
     Return a shell snippet that cd's into yocto_dir and sources
     oe-init-build-env for work_dir.
     """
+    # Captured bitbake-getvar output must contain only the requested value.
+    stdout_redirect = " >/dev/null" if quiet else ""
     return " && ".join([
         f"cd {shlex.quote(yocto_dir)}",
-        f". {shlex.quote(distro_dir)}/oe-init-build-env {shlex.quote(work_dir)}",
+        f". {shlex.quote(distro_dir)}/oe-init-build-env {shlex.quote(work_dir)}{stdout_redirect}",
     ])
 
 

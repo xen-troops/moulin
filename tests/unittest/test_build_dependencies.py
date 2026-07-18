@@ -16,6 +16,7 @@ from moulin import ninja_syntax
 from moulin.build_conf import MoulinConfiguration
 from moulin.build_generator import generate_build, generate_component_dyndep
 from moulin.main import moulin_entry
+from moulin.builders.yocto import _get_yocto_generated_dirs
 from moulin.builders.zephyr import ZephyrBuilder
 from moulin.yaml_helpers import YAMLProcessingError
 from moulin.yaml_wrapper import YamlValue
@@ -36,6 +37,17 @@ def _write_source_archive():
         stream.write("source contents\n")
     with tarfile.open("source.tar", "w") as archive:
         archive.add("source-file")
+
+
+def _write_yocto_layer(layer_dir):
+    os.makedirs(os.path.join(layer_dir, "conf"))
+    os.makedirs(os.path.join(layer_dir, "recipes-core/images"))
+    with open(os.path.join(layer_dir, "conf/layer.conf"), "w",
+              encoding="utf-8") as stream:
+        stream.write("# layer configuration\n")
+    with open(os.path.join(layer_dir, "recipes-core/images/image.bb"), "w",
+              encoding="utf-8") as stream:
+        stream.write("DESCRIPTION = \"test image\"\n")
 
 
 def _make_zephyr_builder():
@@ -74,6 +86,17 @@ class TestComponentDependencies(unittest.TestCase):
                     return stream.read()
             finally:
                 os.chdir(old_cwd)
+
+    def _generate_yocto_depfile(self, doc, setup=None):
+        generated_dirs = []
+
+        def setup_with_generated_dirs():
+            if setup:
+                generated_dirs.extend(setup() or [])
+
+        with patch("moulin.builders.yocto._get_yocto_generated_dirs",
+                   return_value=generated_dirs):
+            return self._generate_depfile(doc, setup=setup_with_generated_dirs)
 
     def test_default_dependency_policy_uses_fetched_files(self):
         """Verifies default dependency_policy uses legacy 'fetched_files' deps policy."""
@@ -116,19 +139,44 @@ components:
         """
 
         def setup():
-            os.makedirs("test/meta-product/conf")
-            os.makedirs("test/meta-product/recipes-core/images")
-            with open("test/meta-product/conf/layer.conf", "w", encoding="utf-8") as stream:
-                stream.write("# layer configuration\n")
-            with open("test/meta-product/recipes-core/images/image.bb", "w",
-                      encoding="utf-8") as stream:
-                stream.write("DESCRIPTION = \"test image\"\n")
+            _write_yocto_layer("test/meta-product")
 
-        depfile = self._generate_depfile(doc, setup=setup)
+        depfile = self._generate_yocto_depfile(doc, setup=setup)
 
         self.assertIn("test/build/target-image:", depfile)
         self.assertIn("test/meta-product/conf/layer.conf", depfile)
         self.assertIn("test/meta-product/recipes-core/images/image.bb", depfile)
+
+    def test_yocto_layer_deps_exclude_git_directory(self):
+        """Verifies Git metadata below a layer is not tracked."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../meta-product"
+        """
+
+        def setup():
+            _write_yocto_layer("test/meta-product")
+            os.makedirs("test/meta-product/.git/objects")
+            with open("test/meta-product/.git/objects/object", "w",
+                      encoding="utf-8") as stream:
+                stream.write("git object\n")
+
+        depfile = self._generate_yocto_depfile(doc, setup=setup)
+
+        self.assertIn("test/meta-product/conf/layer.conf", depfile)
+        self.assertIn("test/meta-product/recipes-core/images/image.bb", depfile)
+        self.assertNotIn("test/meta-product/.git/objects/object", depfile)
 
     def test_yocto_layer_deps_exclude_work_dir_nested_under_layer(self):
         """Verifies Yocto build dir nested under a layer is not tracked."""
@@ -155,24 +203,18 @@ components:
             layer_dir = "test/yocto/meta-product"
             build_dir = os.path.join(layer_dir, "yocto/build/secure-image")
 
-            os.makedirs(os.path.join(layer_dir, "conf"))
-            os.makedirs(os.path.join(layer_dir, "recipes-core/images"))
+            _write_yocto_layer(layer_dir)
             os.makedirs(os.path.join(build_dir, "buildhistory/packages/acl"))
             os.makedirs(os.path.join(build_dir, "tmp/work"))
-            with open(os.path.join(layer_dir, "conf/layer.conf"), "w",
-                      encoding="utf-8") as stream:
-                stream.write("# layer configuration\n")
-            with open(os.path.join(layer_dir, "recipes-core/images/image.bb"), "w",
-                      encoding="utf-8") as stream:
-                stream.write("DESCRIPTION = \"test image\"\n")
             with open(os.path.join(build_dir, "buildhistory/packages/acl/latest"), "w",
                       encoding="utf-8") as stream:
                 stream.write("generated buildhistory\n")
             with open(os.path.join(build_dir, "tmp/work/generated.bb"), "w",
                       encoding="utf-8") as stream:
                 stream.write("generated recipe\n")
+            return [os.path.abspath(build_dir)]
 
-        depfile = self._generate_depfile(doc, setup=setup)
+        depfile = self._generate_yocto_depfile(doc, setup=setup)
 
         self.assertIn("test/yocto/meta-product/yocto/build/secure-image/target-image:",
                       depfile)
@@ -202,20 +244,153 @@ components:
         """
 
         def setup():
-            os.makedirs("test/build/generated-layer/conf")
-            os.makedirs("test/build/generated-layer/recipes-core/images")
-            with open("test/build/generated-layer/conf/layer.conf", "w",
-                      encoding="utf-8") as stream:
-                stream.write("# generated layer configuration\n")
-            with open("test/build/generated-layer/recipes-core/images/image.bb", "w",
-                      encoding="utf-8") as stream:
-                stream.write("DESCRIPTION = \"generated layer image\"\n")
+            _write_yocto_layer("test/build/generated-layer")
 
-        depfile = self._generate_depfile(doc, setup=setup)
+        depfile = self._generate_yocto_depfile(doc, setup=setup)
 
         self.assertIn("test/build/target-image:", depfile)
         self.assertIn("test/build/generated-layer/conf/layer.conf", depfile)
         self.assertIn("test/build/generated-layer/recipes-core/images/image.bb", depfile)
+
+    def test_yocto_layer_deps_exclude_bitbake_generated_dirs(self):
+        """Verifies BitBake-reported generated dirs are not tracked."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: yocto/meta-product/yocto/build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../../.."
+        """
+
+        def setup():
+            layer_dir = "test/yocto/meta-product"
+            secure_image = os.path.join(layer_dir, "yocto/build/secure-image")
+            common_data = os.path.join(layer_dir, "yocto/build/common_data")
+
+            _write_yocto_layer(layer_dir)
+            os.makedirs(os.path.join(secure_image, "tmp/work"))
+            os.makedirs(os.path.join(common_data, "downloads/git2"))
+            with open(os.path.join(secure_image, "tmp/work/generated.bb"), "w",
+                      encoding="utf-8") as stream:
+                stream.write("generated recipe\n")
+            with open(os.path.join(common_data, "downloads/git2/mirror.tar.gz"), "w",
+                      encoding="utf-8") as stream:
+                stream.write("generated download\n")
+
+            return [
+                os.path.abspath(secure_image),
+                os.path.abspath(common_data),
+            ]
+
+        depfile = self._generate_yocto_depfile(doc, setup=setup)
+
+        self.assertIn("test/yocto/meta-product/yocto/build/secure-image/target-image:",
+                      depfile)
+        self.assertIn("test/yocto/meta-product/conf/layer.conf", depfile)
+        self.assertIn("test/yocto/meta-product/recipes-core/images/image.bb", depfile)
+        self.assertNotIn("tmp/work/generated.bb", depfile)
+        self.assertNotIn("common_data/downloads/git2/mirror.tar.gz", depfile)
+
+    def test_yocto_layer_deps_prune_generated_dirs_through_layer_symlink(self):
+        """Verifies generated dirs are pruned when the layer path is a symlink."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: yocto/build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../../meta-product"
+        """
+
+        def setup():
+            layer_dir = "test/meta-product"
+            build_dir = os.path.join(layer_dir, "yocto/build/secure-image")
+            symlink_path = "test/yocto/meta-product"
+
+            _write_yocto_layer(layer_dir)
+            os.makedirs(os.path.join(build_dir, "tmp/work"))
+            os.makedirs(os.path.dirname(symlink_path))
+            os.symlink("../meta-product", symlink_path)
+
+            with open(os.path.join(build_dir, "tmp/work/generated.bb"), "w",
+                      encoding="utf-8") as stream:
+                stream.write("generated recipe\n")
+            return [os.path.abspath(build_dir)]
+
+        depfile = self._generate_yocto_depfile(doc, setup=setup)
+
+        self.assertIn("test/yocto/build/secure-image/target-image:", depfile)
+        self.assertIn("test/yocto/meta-product/conf/layer.conf", depfile)
+        self.assertIn("test/yocto/meta-product/recipes-core/images/image.bb", depfile)
+        self.assertNotIn("tmp/work/generated.bb", depfile)
+
+    def test_yocto_generated_dirs_are_read_with_bitbake_getvar(self):
+        """Verifies generated dirs are read with bitbake-getvar."""
+        run_results = [
+            subprocess.CompletedProcess(args=[], returncode=0, stdout=value)
+            for value in [
+                "/work/yocto/build/secure-image\n",
+                "/work/yocto/build/secure-image/tmp\n",
+                "/work/yocto/build/common_data/downloads\n",
+                "/work/yocto/build/common_data/sstate-cache\n",
+                "relative/path\n",
+                "\n",
+                "\n",
+                "\n",
+                "\n",
+                "\n",
+            ]
+        ]
+
+        with patch("moulin.builders.yocto._run_bash", side_effect=run_results) as run_bash:
+            paths = _get_yocto_generated_dirs("/work", "poky", "yocto/build/secure-image")
+
+        self.assertEqual(paths, [
+            "/work/yocto/build/common_data/downloads",
+            "/work/yocto/build/common_data/sstate-cache",
+            "/work/yocto/build/secure-image",
+            "/work/yocto/build/secure-image/tmp",
+        ])
+        self.assertEqual(run_bash.call_count, 10)
+        self.assertIn("oe-init-build-env yocto/build/secure-image >/dev/null",
+                      run_bash.call_args_list[0].args[0])
+        self.assertIn("bitbake-getvar --ignore-undefined --value TOPDIR",
+                      run_bash.call_args_list[0].args[0])
+
+    def test_yocto_generated_dir_query_failure_warns_and_continues(self):
+        """Verifies missing BitBake variables do not abort dep generation."""
+        values = [
+            subprocess.CalledProcessError(1, "bitbake-getvar", stderr="missing"),
+            subprocess.CompletedProcess(args=[], returncode=0,
+                                        stdout="/work/yocto/build/secure-image/tmp\n"),
+        ]
+        values.extend(subprocess.CompletedProcess(args=[], returncode=0, stdout="\n")
+                      for _ in range(8))
+
+        with patch("moulin.builders.yocto._run_bash", side_effect=values), \
+                self.assertLogs("moulin.builders.yocto", level="WARNING") as logs:
+            paths = _get_yocto_generated_dirs("/work", "poky", "yocto/build/secure-image")
+
+        self.assertEqual(paths, ["/work/yocto/build/secure-image/tmp"])
+        self.assertIn("Can't query BitBake generated directory variable TOPDIR",
+                      logs.output[0])
 
     def test_build_files_dependency_policy_rejects_unsupported_builder(self):
         """Verifies direct --dep rejects unsupported 'build_files' deps policy."""

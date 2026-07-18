@@ -76,7 +76,8 @@ class FakeYoctoBuild:
         shutil.copytree(self.resources_dir / "workspace", self.workspace)
         shutil.copytree(self.resources_dir / "bin", self.fake_bin)
         shutil.copy2(self.resources_dir / "build.yaml", self.yaml_file)
-        for tool in [self.fake_bin / "bitbake", self.fake_bin / "bitbake-layers"]:
+        tools = ["bitbake", "bitbake-getvar", "bitbake-layers"]
+        for tool in [self.fake_bin / name for name in tools]:
             tool.chmod(0o755)
 
     def _write_moulin_wrapper(self):

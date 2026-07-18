@@ -1,0 +1,32 @@
+#!/bin/sh
+echo "$@" >> bitbake-getvar.log
+
+if [ "$1" = "-q" ]; then
+	shift
+fi
+
+if [ "$1" = "--ignore-undefined" ]; then
+	shift
+fi
+
+if [ "$1" = "--value" ]; then
+	shift
+fi
+
+case "$1" in
+TOPDIR)
+	pwd
+	;;
+TMPDIR)
+	printf '%s/tmp\n' "$(pwd)"
+	;;
+DL_DIR)
+	printf '%s/downloads\n' "$(pwd)"
+	;;
+SSTATE_DIR)
+	printf '%s/sstate-cache\n' "$(pwd)"
+	;;
+*)
+	:
+	;;
+esac
