@@ -187,6 +187,32 @@ your YAML Moulin configuration files.
     return result
 
 
+def _is_same_or_child_path(child_candidate: str, parent_candidate: str) -> bool:
+    # Resolve symlinks before collapsing path components; a lexical normpath
+    # can change the meaning of ".." that follows a symlink.
+    child_candidate = os.path.realpath(child_candidate)
+    parent_candidate = os.path.realpath(parent_candidate)
+    return os.path.commonpath([child_candidate, parent_candidate]) == parent_candidate
+
+
+def _validate_work_dir_outside_layers(yocto_dir: str, work_dir: str, layers_node: YamlValue,
+                                      layers: List[str]) -> None:
+    work_dir_path = os.path.join(yocto_dir, work_dir)
+    layers_base = os.path.join(yocto_dir, work_dir)
+    for layer in layers:
+        layer_path = os.path.join(layers_base, layer)
+        if _is_same_or_child_path(work_dir_path, layer_path):
+            layer_path = os.path.normpath(layer_path)
+            rel_work_dir = os.path.relpath(os.path.realpath(work_dir_path),
+                                           os.path.realpath(layer_path))
+            contained_work_dir = os.path.normpath(os.path.join(layer_path, rel_work_dir))
+            raise YAMLProcessingError(
+                "Unsupported Yocto layout: keep the Yocto work_dir outside managed layers. "
+                f"Configured layer '{layer_path}' contains work_dir '{contained_work_dir}' "
+                "after resolving symlinks.",
+                layers_node.mark)
+
+
 class YoctoBuilder:
     """
     YoctoBuilder class generates Ninja rules for given build configuration
@@ -206,6 +232,11 @@ class YoctoBuilder:
         self.yocto_dir = build_dir
         self.work_dir: str = conf.get("work_dir", "build").as_str
         self.base_distro: str = conf.get("base_distro", "poky").as_str
+        if "layers" in self.conf:
+            layers_node = self.conf["layers"]
+            layers = _filter_yocto_core_layers(_flatten_layers(layers_node))
+            _validate_work_dir_outside_layers(self.yocto_dir, self.work_dir,
+                                              layers_node, layers)
 
     def _get_external_src(self) -> List[Tuple[str, str]]:
         external_src_node = self.conf.get("external_src", None)
@@ -310,7 +341,7 @@ class YoctoBuilder:
             if not os.path.isdir(layer_path):
                 raise YAMLProcessingError(f"Can't find Yocto layer directory '{layer_path}'",
                                           layers_node.mark)
-            for dirpath, _, filenames in os.walk(layer_path):
+            for dirpath, _, filenames in os.walk(layer_path, followlinks=False):
                 deps.extend(os.path.join(dirpath, filename) for filename in filenames)
         return deps
 

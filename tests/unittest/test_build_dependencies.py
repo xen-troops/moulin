@@ -130,6 +130,164 @@ components:
         self.assertIn("test/meta-product/conf/layer.conf", depfile)
         self.assertIn("test/meta-product/recipes-core/images/image.bb", depfile)
 
+    def test_yocto_layer_depfile_does_not_follow_symlinked_directories(self):
+        """Verifies layer dependency tracking does not traverse symlink dirs."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../../meta-product"
+        """
+
+        def setup():
+            os.makedirs("test/meta-product/conf")
+            os.makedirs("test/build/secure-image/tmp")
+            with open("test/meta-product/conf/layer.conf", "w", encoding="utf-8") as stream:
+                stream.write("# layer configuration\n")
+            with open("test/build/secure-image/tmp/generated.txt", "w",
+                      encoding="utf-8") as stream:
+                stream.write("generated\n")
+            os.symlink("../build/secure-image/tmp", "test/meta-product/tmp-link")
+
+        depfile = self._generate_depfile(doc, setup=setup)
+
+        self.assertIn("test/meta-product/conf/layer.conf", depfile)
+        self.assertNotIn("test/build/secure-image/tmp/generated.txt", depfile)
+        self.assertNotIn("test/meta-product/tmp-link/generated.txt", depfile)
+
+    def test_yocto_build_generation_rejects_work_dir_nested_under_layer(self):
+        """Verifies unsupported Yocto layout fails before build.ninja is written."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: yocto/meta-product/yocto/build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../../.."
+        """
+
+        old_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            os.chdir(tmp_dir)
+            try:
+                with self.assertRaisesRegex(YAMLProcessingError,
+                                            "Unsupported Yocto layout"):
+                    generate_build(_make_conf(doc), "test.yaml")
+                self.assertFalse(os.path.exists("build.ninja"))
+            finally:
+                os.chdir(old_cwd)
+
+    def test_yocto_depfile_rejects_work_dir_nested_under_layer(self):
+        """Verifies direct depfile generation rejects unsupported Yocto layout."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: yocto/meta-product/yocto/build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../../.."
+        """
+
+        with self.assertRaisesRegex(YAMLProcessingError, "Unsupported Yocto layout"):
+            self._generate_depfile(doc)
+
+    def test_yocto_build_generation_rejects_symlinked_layer_containing_work_dir(self):
+        """Verifies Yocto layout validation resolves symlinks."""
+        doc = """
+desc: "Test build dependencies"
+components:
+  test:
+    build-dir: meta-product
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: yocto/build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "../../meta-product"
+        """
+
+        old_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            os.chdir(tmp_dir)
+            try:
+                os.makedirs("meta-product/yocto/build/secure-image")
+                os.symlink("../../meta-product", "meta-product/yocto/meta-product")
+                expected = (
+                    "Configured layer 'meta-product/yocto/meta-product' contains "
+                    "work_dir 'meta-product/yocto/meta-product/yocto/build/secure-image'"
+                )
+                with self.assertRaisesRegex(YAMLProcessingError, expected):
+                    generate_build(_make_conf(doc), "test.yaml")
+                self.assertFalse(os.path.exists("build.ninja"))
+            finally:
+                os.chdir(old_cwd)
+
+    def test_yocto_build_generation_resolves_symlink_before_parent_components(self):
+        """Verifies validation does not collapse '..' before resolving symlinks."""
+        old_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            os.chdir(tmp_dir)
+            try:
+                os.makedirs("real/layer/yocto/build/secure-image")
+                os.makedirs("real/child")
+                os.symlink("real/child", "link")
+                layer = os.path.join(tmp_dir, "link/../layer")
+                doc = f"""
+desc: "Test build dependencies"
+components:
+  test:
+    build-dir: .
+    sources:
+      - type: "null"
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      work_dir: real/layer/yocto/build/secure-image
+      conf:
+      target_images:
+        - "target-image"
+      layers:
+        - "{layer}"
+        """
+
+                with self.assertRaisesRegex(YAMLProcessingError,
+                                            "Unsupported Yocto layout"):
+                    generate_build(_make_conf(doc), "test.yaml")
+                self.assertFalse(os.path.exists("build.ninja"))
+            finally:
+                os.chdir(old_cwd)
+
     def test_build_files_dependency_policy_rejects_unsupported_builder(self):
         """Verifies direct --dep rejects unsupported 'build_files' deps policy."""
         doc = """
