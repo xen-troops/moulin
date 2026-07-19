@@ -548,6 +548,14 @@ needed if you are building multiple VMs with cross-dependencies.
   generated Ninja depfile for the component, so changes in Moulin-managed
   layers trigger a rebuild of the Yocto target images.
 
+  Avoid product layouts where a listed layer directory contains the Yocto
+  :code:`work_dir`. This makes generated files from directories such as
+  :code:`tmp`, :code:`cache`, or :code:`buildhistory` look like layer source
+  dependencies. Moulin rejects configurations where the configured
+  :code:`work_dir` resolves inside a managed layer, but this guard is not
+  exhaustive: generated output can still be written into a layer through
+  custom BitBake paths, manual file copies, or other indirection.
+
 * :code:`work_dir` - `bitbake`'s work directory. The default value is
   "build". This is where files like "conf/local.conf" are stored. You
   can overwrite so you can produce multiple builds from the same (or
