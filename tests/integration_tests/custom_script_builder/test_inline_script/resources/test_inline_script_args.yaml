@@ -1,0 +1,29 @@
+desc: "Test inline_script args"
+min_ver: "0.31"
+
+components:
+  list_args:
+    build-dir: "."
+    builder:
+      type: custom_script
+      inline_script: |
+        #!/bin/sh
+        printf "%s\n" "$@" > list-args.txt
+        touch list-args-image
+      args:
+        - "--mode"
+        - "list value"
+      target_images:
+        - "list-args-image"
+
+  string_args:
+    build-dir: "."
+    builder:
+      type: custom_script
+      inline_script: |
+        #!/bin/sh
+        printf "%s\n" "$@" > string-args.txt
+        touch string-args-image
+      args: "--mode 'string value'"
+      target_images:
+        - "string-args-image"

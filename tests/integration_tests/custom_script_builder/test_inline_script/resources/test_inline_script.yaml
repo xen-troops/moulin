@@ -1,0 +1,22 @@
+desc: "Test inline_script parameter"
+min_ver: "0.31"
+
+components:
+  test:
+    build-dir: "."
+    builder:
+      type: custom_script
+      inline_script: |
+        #!/usr/bin/env python3
+        import shutil
+        import sys
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "source file"
+            source.write_text("payload\n", encoding="utf-8")
+            shutil.copyfile(source, "Image")
+        Path("inline-config-path.txt").write_text(sys.argv[1] + "\n", encoding="utf-8")
+      target_images:
+        - "Image"
