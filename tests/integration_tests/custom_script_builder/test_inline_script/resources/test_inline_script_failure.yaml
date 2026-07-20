@@ -1,0 +1,15 @@
+desc: "Test inline_script failure"
+min_ver: "0.31"
+
+components:
+  test:
+    build-dir: "."
+    builder:
+      type: custom_script
+      inline_script: |
+        #!/bin/sh
+        echo "inline stdout"
+        echo "inline stderr" >&2
+        exit 7
+      target_images:
+        - "Image"

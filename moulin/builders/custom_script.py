@@ -6,10 +6,16 @@ Custom Script builder module
 
 
 import yaml
+import argparse
 import base64
-import os.path
+import os
+import shlex
+import subprocess
+import sys
+import tempfile
 from typing import List
 from moulin.yaml_wrapper import YamlValue
+from moulin.yaml_helpers import YAMLProcessingError
 from moulin.utils import construct_dep_cmd
 from moulin import ninja_syntax
 
@@ -50,6 +56,82 @@ def gen_build_rules(generator: ninja_syntax.Writer):
                    restat=True)
     generator.newline()
 
+    prog = os.path.basename(sys.argv[0])
+    cmd = " && ".join([
+        "pushd $build_dir > /dev/null",
+        f"{prog} --utility-builders-custom_script --run-inline-script "
+        "--config-file $config_file",
+        "popd > /dev/null",
+        construct_dep_cmd(),
+    ])
+    generator.rule("cs_inline_build",
+                   command=f'bash -c "{cmd}"',
+                   description="Running inline custom script",
+                   pool="console",
+                   restat=True)
+    generator.newline()
+
+
+def _get_script_args(conf):
+    """Return custom_script args as the shell command line would parse them."""
+    args = conf.get("args", "")
+    if isinstance(args, list):
+        return [str(arg) for arg in args]
+    if args:
+        return shlex.split(str(args))
+    return []
+
+
+def _run_inline_script(config_file: str) -> int:
+    """Materialize and run an inline script described by the generated config."""
+    with open(config_file, encoding="utf-8") as stream:
+        conf = yaml.safe_load(stream)
+
+    inline_script = conf.get("inline_script")
+    if inline_script is None:
+        raise Exception(f"Config file '{config_file}' does not contain inline_script")
+
+    work_dir = os.path.dirname(config_file) or "."
+    script_file = None
+    result = None
+    try:
+        with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                prefix=".moulin-inline-",
+                dir=work_dir,
+                delete=False) as stream:
+            script_file = stream.name
+            stream.write(inline_script)
+
+        os.chmod(script_file, 0o700)
+        result = subprocess.run([script_file, *_get_script_args(conf), config_file])
+    finally:
+        if script_file is not None:
+            try:
+                os.unlink(script_file)
+            except FileNotFoundError:
+                pass
+
+    if result is None:
+        return 1
+    return result.returncode
+
+
+def handle_utility_call(argv: List[str]) -> int:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--run-inline-script", action="store_true")
+    parser.add_argument("--config-file", required=True)
+    args = parser.parse_args(argv)
+
+    if args.run_inline_script:
+        return_code = _run_inline_script(args.config_file)
+        if return_code != 0:
+            raise SystemExit(return_code)
+        return 0
+
+    raise Exception("Unsupported custom_script utility call")
+
 
 class CustomScriptBuilder:
     """
@@ -68,11 +150,26 @@ class CustomScriptBuilder:
         """Generate ninja rules launch custom script"""
         work_dir = self.conf.get("work_dir", "script_workdir").as_str
         common_variables = {
-            "script": self.conf["script"].as_str,
             "work_dir": work_dir,
             "build_dir": self.build_dir,
             "name": self.name,
         }
+        script_node = self.conf.get("script", None)
+        inline_script_node = self.conf.get("inline_script", None)
+        if script_node and inline_script_node:
+            raise YAMLProcessingError("'script' and 'inline_script' are mutually exclusive",
+                                      self.conf.mark)
+        if not script_node and not inline_script_node:
+            raise YAMLProcessingError("Either 'script' or 'inline_script' is required",
+                                      self.conf.mark)
+
+        if inline_script_node:
+            inline_script_node.as_str
+            build_rule = "cs_inline_build"
+        else:
+            build_rule = "cs_build"
+            common_variables["script"] = script_node.as_str
+
         local_conf_file = os.path.join(work_dir, f"conf-{self.name}.yaml")
         local_conf_target = os.path.join(self.build_dir, local_conf_file)
         serialized_conf = yaml.serialize(self.conf._node)
@@ -99,7 +196,7 @@ class CustomScriptBuilder:
             args = " ".join([x.as_str for x in args_node])
         else:
             args = args_node.as_str
-        self.generator.build(targets, "cs_build", deps, variables=dict(
+        self.generator.build(targets, build_rule, deps, variables=dict(
             common_variables,
             config_file=local_conf_file,
             args=args))

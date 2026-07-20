@@ -1,0 +1,14 @@
+desc: "Test inline_script rejects script conflict"
+min_ver: "0.31"
+
+components:
+  test:
+    build-dir: "."
+    builder:
+      type: custom_script
+      script: "../../resources/script.sh"
+      inline_script: |
+        #!/bin/sh
+        set -eu
+      target_images:
+        - "Image"

@@ -1,0 +1,10 @@
+desc: "Test custom_script requires a script source"
+min_ver: "0.31"
+
+components:
+  test:
+    build-dir: "."
+    builder:
+      type: custom_script
+      target_images:
+        - "Image"
