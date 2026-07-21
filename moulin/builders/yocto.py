@@ -97,6 +97,20 @@ def gen_build_rules(generator: ninja_syntax.Writer):
                    deps="gcc",
                    depfile=".moulin_$name.d",
                    restat=True)
+    generator.newline()
+
+    cmd = " && ".join([
+        "pushd $yocto_dir > /dev/null",
+        "source $distro_dir/oe-init-build-env $work_dir",
+        "bitbake -c populate_sdk $target",
+        "popd > /dev/null",
+        "touch $out",
+    ])
+    generator.rule("yocto_populate_sdk",
+                   command=f'bash -c "{cmd}"',
+                   description="Yocto Populate SDK: $name",
+                   pool="console",
+                   restat=True)
 
 
 def _flatten_yocto_conf(conf: YamlValue) -> List[Tuple[str, str]]:
@@ -297,10 +311,21 @@ class YoctoBuilder:
                              "yocto_build",
                              local_conf_target,
                              variables=dict(common_variables,
-                                            target=self.conf["build_target"].as_str,
+                                            target=shlex.quote(self.conf["build_target"].as_str),
                                             name=self.name))
 
-        return targets
+        if not self.conf.get("populate_sdk", False).as_bool:
+            return targets
+
+        sdk_stamp = create_stamp_name(self.yocto_dir, self.work_dir, self.name, "populate_sdk")
+        self.generator.build(sdk_stamp,
+                             "yocto_populate_sdk",
+                             targets,
+                             variables=dict(common_variables,
+                                            target=shlex.quote(self.conf["build_target"].as_str),
+                                            name=self.name))
+
+        return targets + [sdk_stamp]
 
     def get_extra_dep_file_list(self) -> List[str]:
         "Return files from Moulin-managed Yocto layers."

@@ -99,6 +99,51 @@ components:
         else:
             self.fail("Could not find yocto_build target")
 
+    def test_populate_sdk(self):
+        doc = """
+desc: "Test build"
+components:
+  test:
+    builder:
+      type: "yocto"
+      build_target: core-image-minimal
+      populate_sdk: true
+      conf:
+      target_images:
+        - "target-image"
+    sources:
+      - type: "null"
+        """
+        node = yaml.compose(doc)
+        conf = MoulinConfiguration(node)
+        generate_build(conf, "test.yaml")
+
+        image_targets = ["test/build/target-image"]
+        sdk_stamp = None
+        found_image_build = False
+        found_sdk_build = False
+        for call in self.Writer.return_value.build.call_args_list:
+            if call.args[1] == "yocto_build":
+                self.assertListEqual(call.args[0], image_targets)
+                self.assertIn("variables", call.kwargs)
+                self.assertIn("target", call.kwargs["variables"])
+                self.assertEqual(call.kwargs["variables"]["target"], "core-image-minimal")
+                found_image_build = True
+            elif call.args[1] == "yocto_populate_sdk":
+                sdk_stamp = call.args[0]
+                self.assertListEqual(call.args[2], image_targets)
+                self.assertIn("variables", call.kwargs)
+                self.assertIn("target", call.kwargs["variables"])
+                self.assertEqual(call.kwargs["variables"]["target"], "core-image-minimal")
+                found_sdk_build = True
+
+        self.assertTrue(found_image_build, "Could not find yocto_build target")
+        self.assertTrue(found_sdk_build, "Could not find yocto_populate_sdk target")
+        self.Writer.return_value.build.assert_any_call(
+            "test",
+            "phony",
+            image_targets + [sdk_stamp])
+
     def test_layer_sync_passes_distro_dir(self):
         doc = """
 desc: "Test build"

@@ -494,6 +494,7 @@ configuration with the layer list defined in the YAML file, and
     base_distro: poky # Optional
     work_dir: "build" # Optional
     build_target: core-image-minimal # Mandatory
+    populate_sdk: false # Optional
     conf:             # Mandatory
       - [MACHINE, "machine-name"]
       - [DISTRO_FEATURES_remove, "feature_to_remove"]
@@ -552,6 +553,12 @@ needed if you are building multiple VMs with cross-dependencies.
   "build". This is where files like "conf/local.conf" are stored. You
   can overwrite so you can produce multiple builds from the same (or
   different) set of Yocto layers.
+
+* :code:`populate_sdk` - boolean flag that also runs BitBake's SDK
+  population task. When this option is set to :code:`true`, Moulin first
+  invokes BitBake for :code:`{build_target}` to produce the configured
+  :code:`target_images`, and then invokes BitBake for the same target with
+  :code:`-c populate_sdk`.
 
 * :code:`additional_deps` - list of additional dependencies. This is
   basically :code:`target_images` produced by other components. You
