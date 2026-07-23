@@ -33,7 +33,7 @@ jobs:
         # Needed by pygit package
         sudo apt-get install -y python3-pygit2
         # Needed by moulin integration tests
-        sudo apt-get install -y build-essential cmake ninja-build
+        sudo apt-get install -y build-essential cmake ninja-build e2fsprogs
         # Install other dependencies from setup.py
         pip3 install .
     - name: Lint with flake8

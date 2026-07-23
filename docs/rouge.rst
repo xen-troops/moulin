@@ -334,6 +334,15 @@ Older versions of `rouge` used :code:`files:` as the name of the
 section. This name is still possible to use, but it is deprecated.
 Also, only :code:`items:` can contain directories.
 
+For :code:`ext4`, :code:`items:` are copied into a temporary staging
+directory before the filesystem is created. Rouge preserves regular file
+contents, directory layouts, symlinks, Unix permissions, and timestamps
+where supported by the host filesystem. It does not preserve UID/GID
+ownership: staged files and directories are owned by the user running
+Rouge, and parent directories created for remote paths are created by
+Rouge. If the image must keep prepared numeric ownership, use
+:code:`root_directory:` instead.
+
 :code:`size` is optional. `rouge` will calculate the total file size and
 add some space for the filesystem metadata to determine the block size.
 You can increase the size if you wish.
@@ -343,6 +352,36 @@ image will be copied in non-sparse mode. This may increase the final image
 size on disk and processing time. Use this option only when absolutely
 necessary, i.e, when some piece of software (like a bootloader) depends
 on values in unallocated sectors.
+
+:code:`root_directory:` for :code:`ext4` filesystems can be used instead
+of :code:`items:` to create the filesystem directly from a prepared root
+directory:
+
+.. code-block:: yaml
+
+   type: ext4
+   size: 128 MiB
+   root_directory: "path/to/prepared/root"
+
+This option is mutually exclusive with :code:`items:` and the deprecated
+:code:`files:` section. It is passed to :code:`mkfs.ext4 -d` directly.
+This is useful when a previous build step prepared a directory tree with
+the required permissions and numeric UID/GID ownership.
+
+:code:`root_owner:` for :code:`ext4` filesystems can be used to set the
+owner of the filesystem root directory:
+
+.. code-block:: yaml
+
+   type: ext4
+   size: 128 MiB
+   root_owner: "0:0"
+   root_directory: "path/to/prepared/root"
+
+This option must use numeric :code:`uid:gid` format. It is passed to
+:code:`mkfs.ext4 -E root_owner=uid:gid`. It affects only the root
+directory of the created filesystem, not every file recursively. If it
+is omitted, :code:`mkfs.ext4` default behavior is used.
 
 GUID Partition Table (GPT) block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

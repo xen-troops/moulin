@@ -64,9 +64,11 @@ def simg2img(file_in: Union[str, BinaryIO], file_out: BinaryIO):
     _run_cmd(args)
 
 
-def mkext4fs(file_out: BinaryIO, contents_dir=None):
+def mkext4fs(file_out: BinaryIO, contents_dir=None, root_owner=None):
     "Create ext4 fs in given file"
     args = ["mkfs.ext4", file_out.name]
+    if root_owner:
+        args.extend(["-E", f"root_owner={root_owner}"])
     if contents_dir:
         args.append("-d")
         args.append(contents_dir)
